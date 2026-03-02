@@ -1,11 +1,13 @@
 #PV2
 import time
-t = time.time()
+
+#t = time.time()
+
 import re
 import os
 
-from transformers import AutoTokenizer
 from datasets import Dataset, load_dataset
+from transformers import AutoTokenizer
 
 class DataPreprocessor:
     _URL_RE = re.compile(r"https?://|www\.")
@@ -131,11 +133,11 @@ class DataPreprocessor:
 
     def main(self):
         self.load(num_pairs=10000)
-        self.save_txt("data")
+        self.save_txt("data/txt/europarl")
         self.preprocess(256)
-        self.save("./jsonl/data.arrow")
+        self.save("data/arrow/europarl.arrow")
 
 if __name__ == "__main__":
-    print("Import:", time.time() - t)
+    #print("Import:", time.time() - t)
     preprocessor = DataPreprocessor()
     preprocessor.main()
