@@ -9,9 +9,17 @@ from .check import check, check_pair, TEXT_FLAWS, TEXT_PAIR_FLAWS
 print("Start!")
 
 class FlawReport:
+    _singleton = None
+
     def __init__(self, out: TextIO):
         self.out = out
         self.seq_no = 0
+
+    @classmethod
+    def singleton(cls):
+        if cls._singleton is None:
+            cls._singleton = cls(open("../flaw_report.log", "w", encoding="utf-8"))
+        return cls._singleton
 
     def note_flaws(self, de_flaws, en_flaws, pair_flaws):
         self.seq_no += 1
@@ -25,8 +33,10 @@ class FlawReport:
             }
             self.out.write(f"{record}\n")
 
+"""
 report_out: TextIO = open("../flaw_report.log", "w", encoding="utf-8")
 report = FlawReport(report_out)
+"""
 
 def keep(ex: Example):
     # dein Filterkriterium (hier Dummy)
@@ -38,14 +48,14 @@ def keep(ex: Example):
     en_flaws = check(en, TEXT_FLAWS)
     pair_flaws = check_pair(de, en, TEXT_PAIR_FLAWS)
 
-    report.note_flaws(de_flaws, en_flaws, pair_flaws)
+    FlawReport.singleton().note_flaws(de_flaws, en_flaws, pair_flaws)
 
     return de_flaws == [] and en_flaws == [] and pair_flaws == []
 
 
-
+"""
 ds = load_dataset("json", data_files="../data/testdata_de_en_100.jsonl", split="train")
-#ds = load_dataset("Helsinki-NLP/europarl", "de-en", split="train", streaming=True)
+##ds = load_dataset("Helsinki-NLP/europarl", "de-en", split="train", streaming=True)
 it = filtered_examples(ds, keep)
 
 try:
@@ -55,3 +65,4 @@ finally:
     report_out.close()
 
 print("Fertig.")
+"""
