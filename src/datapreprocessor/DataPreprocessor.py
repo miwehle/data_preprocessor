@@ -3,7 +3,7 @@
 #t = time.time()
 
 import os
-import checks.check as c
+import filter.check as c
 
 from norm import norm
 from datasets import Dataset, load_dataset

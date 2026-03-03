@@ -2,8 +2,8 @@ from pathlib import Path
 
 from datasets import load_dataset
 
-from datapreprocessor.checks.filter import filtered_examples
-from datapreprocessor.checks.keep import FlawReport, keep
+from datapreprocessor.filter.filter import filtered_examples
+from datapreprocessor.filter.keep import FlawReport, keep
 
 
 def test_filtered_examples_with_keep():
@@ -19,5 +19,5 @@ def test_filtered_examples_with_keep():
         report = FlawReport.singleton()
         report.out.flush()
         actual_log = root_dir / "flaw_report.log"
-        expected_log = root_dir / "tests" / "expected" / "checks" / "flaw_report.log"
+        expected_log = root_dir / "tests" / "expected" / "filter" / "flaw_report.log"
         assert actual_log.read_text(encoding="utf-8") == expected_log.read_text(encoding="utf-8")

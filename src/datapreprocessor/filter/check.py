@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from functools import partial
 
-from . import text_predicates as te
-from . import text_pair_predicates as tep
+from .predicates import text_predicates as te
+from .predicates import text_pair_predicates as tep
 
 TEXT_FLAWS = [
     te.is_blank,
