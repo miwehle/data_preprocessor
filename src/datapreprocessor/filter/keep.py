@@ -1,20 +1,22 @@
-from typing import TextIO
+from pathlib import Path
+from typing import TextIO, Protocol
 
 from .filter import Example
 from .check import check, check_pair, TEXT_FLAWS, TEXT_PAIR_FLAWS
 
-class FlawReport:
-    _singleton = None
 
+class FlawReporter(Protocol):
+    def note_flaws(self, de_flaws, en_flaws, pair_flaws) -> None: ...
+
+
+class FlawReport:
     def __init__(self, out: TextIO):
         self.out = out
         self.seq_no = 0
 
     @classmethod
-    def singleton(cls):
-        if cls._singleton is None:
-            cls._singleton = cls(open("flaw_report.txt", "w", encoding="utf-8"))
-        return cls._singleton
+    def from_path(cls, path: str | Path = "flaw_report.txt") -> "FlawReport":
+        return cls(open(path, "w", encoding="utf-8"))
 
     def note_flaws(self, de_flaws, en_flaws, pair_flaws):
         self.seq_no += 1
@@ -28,12 +30,15 @@ class FlawReport:
             }
             self.out.write(f"{record}\n")
 
+    def flush(self) -> None:
+        self.out.flush()
 
-def keep(ex: Example):
-    """Return True for clean examples.
+    def close(self) -> None:
+        self.out.close()
 
-    Side effect: write flaw findings to flaw_report.txt in the current working directory.
-    """
+
+def keep(ex: Example, flaw_reporter: FlawReporter | None = None):
+    """Return True for clean examples and optionally report flaw findings."""
 
     de = ex["translation"]["de"]
     en = ex["translation"]["en"]
@@ -42,6 +47,7 @@ def keep(ex: Example):
     en_flaws = check(en, TEXT_FLAWS)
     pair_flaws = check_pair(de, en, TEXT_PAIR_FLAWS)
 
-    FlawReport.singleton().note_flaws(de_flaws, en_flaws, pair_flaws)
+    if flaw_reporter is not None:
+        flaw_reporter.note_flaws(de_flaws, en_flaws, pair_flaws)
 
     return de_flaws == [] and en_flaws == [] and pair_flaws == []
