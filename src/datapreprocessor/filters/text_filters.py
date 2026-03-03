@@ -1,4 +1,3 @@
-# text_filters.py
 from __future__ import annotations
 
 import re
@@ -36,15 +35,17 @@ _EMAIL_RE = re.compile(
     re.VERBOSE,
 )
 
+_GERMAN_CHARS = re.compile(r"[äöüÄÖÜß]")
 
 def contains_url(text: str) -> bool:
-    """Heuristic: detects url-like patterns (schema/www/domain.tld)."""
     return _URL_RE.search(text) is not None
 
 
 def contains_email(text: str) -> bool:
-    """Heuristic: detects email-like patterns."""
     return _EMAIL_RE.search(text) is not None
+
+def contains_german_chars(text: str) -> bool:
+    return _GERMAN_CHARS.search(text)
 
 
 # --- Whitespace / length -----------------------------------------------------

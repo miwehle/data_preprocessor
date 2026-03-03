@@ -1,13 +1,15 @@
 #PV2
-import time
-
+#import time
 #t = time.time()
 
 import re
 import os
 
+import datapreprocessor.check as c
+
 from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
+
 
 class DataPreprocessor:
     _URL_RE = re.compile(r"https?://|www\.")
@@ -18,6 +20,7 @@ class DataPreprocessor:
     def __init__(self):
         self.tok = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-de-en")
         self.data = None
+        self.violations = {}
 
     @classmethod
     def _norm(cls, s: str) -> str:
@@ -45,7 +48,13 @@ class DataPreprocessor:
             return False
 
         return True
-
+    
+    @classmethod
+    def _check(cls, de: str, en: str) -> bool:
+        violations = c.check(de, c.TEXT_FILTERS)
+        violations += c.check(en, c.TEXT_FILTERS)
+        violations += c.check_pair(de, en, c.TEXT_PAIR_FILTERS)
+        return violations
 
     def load_from_file(self, file):
         """Lädt Daten aus einer Datei"""
@@ -74,13 +83,16 @@ class DataPreprocessor:
             for idx, item in enumerate(self.data):
                 de = self._norm(item["de"])
                 en = self._norm(item["en"])
-                if self._is_pair_ok(de, en):
+                violations = self._check(de, en)
+                if len(violations) == 0:
                   de_tokens = self.tok(item["de"], truncation=True, max_length=block_size)
                   en_tokens = self.tok(item["en"], truncation=True, max_length=block_size)
                   tokenized_data.append({
                       "de": de_tokens["input_ids"],
                       "en": en_tokens["input_ids"]
                   })
+                else:
+                    self.violations[idx] = violations
             self.data = tokenized_data
         print("< preprocess")
 
