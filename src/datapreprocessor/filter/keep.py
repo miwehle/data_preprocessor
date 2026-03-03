@@ -28,8 +28,12 @@ class FlawReport:
             }
             self.out.write(f"{record}\n")
 
+
 def keep(ex: Example):
-    # dein Filterkriterium (hier Dummy)
+    """Return True for clean examples.
+
+    Side effect: write flaw findings to flaw_report.txt in the current working directory.
+    """
 
     de = ex["translation"]["de"]
     en = ex["translation"]["en"]
