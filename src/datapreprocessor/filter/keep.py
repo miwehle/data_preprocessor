@@ -13,7 +13,7 @@ class FlawReport:
     @classmethod
     def singleton(cls):
         if cls._singleton is None:
-            cls._singleton = cls(open("flaw_report.log", "w", encoding="utf-8"))
+            cls._singleton = cls(open("flaw_report.txt", "w", encoding="utf-8"))
         return cls._singleton
 
     def note_flaws(self, de_flaws, en_flaws, pair_flaws):

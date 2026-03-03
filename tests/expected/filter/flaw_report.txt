@@ -1,0 +1,22 @@
+{'seq_no': 5, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 6, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 7, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 11, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 22, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 24, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)'], 'pair_flaws': []}
+{'seq_no': 32, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)'], 'pair_flaws': []}
+{'seq_no': 33, 'de_flaws': [], 'en_flaws': ['is_too_long(max_chars=300)', 'has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 37, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': [], 'pair_flaws': []}
+{'seq_no': 39, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 54, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 58, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)', 'has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 59, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 67, 'de_flaws': [], 'en_flaws': ['is_too_short(min_chars=10)'], 'pair_flaws': []}
+{'seq_no': 74, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)', 'has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 75, 'de_flaws': [], 'en_flaws': ['has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 76, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': [], 'pair_flaws': []}
+{'seq_no': 79, 'de_flaws': ['is_too_long(max_chars=300)', 'has_unbalanced_brackets'], 'en_flaws': [], 'pair_flaws': []}
+{'seq_no': 81, 'de_flaws': ['is_too_long(max_chars=300)', 'has_unbalanced_brackets'], 'en_flaws': ['is_too_long(max_chars=300)'], 'pair_flaws': []}
+{'seq_no': 82, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)', 'has_odd_number_of_quotes'], 'pair_flaws': []}
+{'seq_no': 83, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)'], 'pair_flaws': []}
+{'seq_no': 84, 'de_flaws': ['is_too_long(max_chars=300)'], 'en_flaws': ['is_too_long(max_chars=300)'], 'pair_flaws': []}

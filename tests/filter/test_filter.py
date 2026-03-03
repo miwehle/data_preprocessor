@@ -18,6 +18,6 @@ def test_filter_with_keep():
     finally:
         report = FlawReport.singleton()
         report.out.flush()
-        actual_log = root_dir / "flaw_report.log"
-        expected_log = root_dir / "tests" / "expected" / "filter" / "flaw_report.log"
+        actual_log = root_dir / "flaw_report.txt"
+        expected_log = root_dir / "tests" / "expected" / "filter" / "flaw_report.txt"
         assert actual_log.read_text(encoding="utf-8") == expected_log.read_text(encoding="utf-8")
