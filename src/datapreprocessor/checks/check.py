@@ -30,7 +30,20 @@ TOKEN_PAIR_FLAWS = [
 ]
 
 def find_flaws(flaws, *args):
-    return [f for f in flaws if f(*args)]
+    
+    # Simplifies how matched predicates are represented in reports/logs.
+    def format_flaw(f):
+        if isinstance(f, partial):
+            name = f.func.__name__
+            parts = []
+            if f.args:
+                parts.extend(repr(a) for a in f.args)
+            if f.keywords:
+                parts.extend(f"{k}={v!r}" for k, v in f.keywords.items())
+            return f"{name}({', '.join(parts)})"
+        return f.__name__
+
+    return [format_flaw(f) for f in flaws if f(*args)]
 
 
 def check(x, flaws):
