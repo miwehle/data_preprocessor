@@ -3,7 +3,7 @@
 #t = time.time()
 
 import os
-import filter.check as c
+import filter.keep as c
 
 from norm import norm
 from datasets import Dataset, load_dataset
@@ -29,9 +29,9 @@ class DataPreprocessor:
     
     @classmethod
     def _check(cls, de: str, en: str) -> bool:
-        flaws = c.check(de, c.TEXT_FLAWS)
-        flaws += c.check(en, c.TEXT_FLAWS)
-        flaws += c.check_pair(de, en, c.TEXT_PAIR_FLAWS)
+        flaws = c.find_flaws(c.TEXT_FLAWS, de)
+        flaws += c.find_flaws(c.TEXT_FLAWS, en)
+        flaws += c.find_flaws(c.TEXT_PAIR_FLAWS, de, en)
         return flaws
 
     def load_from_file(self, file):
