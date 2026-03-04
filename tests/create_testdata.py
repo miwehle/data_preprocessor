@@ -6,7 +6,7 @@ from pathlib import Path
 from datasets import load_dataset
 
 
-OUT_PATH = Path("data/testdata_de_en_100.jsonl")
+OUT_PATH = Path("tests/data/testdata_de_en_100.jsonl")
 
 
 def main() -> None:
