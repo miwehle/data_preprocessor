@@ -1,4 +1,4 @@
-from .norm import (
+from .norm_example import (
     CHANGES,
     Example,
     NormReport,
@@ -12,4 +12,5 @@ from .norm import (
     remove_control_chars,
     strip_edges,
 )
-from .norm_examples import norm_examples
+from .norm import norm_examples
+from .norm_example import norm as norm
