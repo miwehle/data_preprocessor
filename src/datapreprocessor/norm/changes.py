@@ -48,5 +48,5 @@ CHANGES: list[Change] = [
     remove_control_chars,
     collapse_whitespace,
     normalize_unicode_quotes,
-    fix_apostrophe_spacing,
+    #fix_apostrophe_spacing,
 ]
