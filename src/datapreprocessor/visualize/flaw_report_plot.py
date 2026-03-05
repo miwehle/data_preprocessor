@@ -35,39 +35,92 @@ def _count_flaws(records: list[dict]) -> tuple[Counter, Counter, Counter]:
     return de_counts, en_counts, pair_counts
 
 
+def _annotate_bars(ax, bars) -> None:
+    for bar in bars:
+        height = bar.get_height()
+        ax.annotate(
+            f"{int(height)}",
+            xy=(bar.get_x() + bar.get_width() / 2, height),
+            xytext=(0, 3),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+
+def _add_headroom(ax, bars, ratio: float = 0.10) -> None:
+    max_height = max((bar.get_height() for bar in bars), default=0)
+    if max_height <= 0:
+        return
+    ax.set_ylim(0, max_height * (1 + ratio))
+
+
 def plot_flaw_counts(report_path: str | Path):
     """
-    Build a grouped bar chart for flaw counts split by
-    de_flaws, en_flaws and pair_flaws.
+    Build two separate figures:
+    1) grouped bar chart for de_flaws and en_flaws
+    2) separate bar chart for pair_flaws
     """
     records = _load_records(report_path)
     de_counts, en_counts, pair_counts = _count_flaws(records)
 
-    all_flaws = sorted(
-        set(de_counts.keys()) | set(en_counts.keys()) | set(pair_counts.keys()),
-        key=lambda flaw: de_counts.get(flaw, 0) + en_counts.get(flaw, 0) + pair_counts.get(flaw, 0),
+    text_flaws = sorted(
+        set(de_counts.keys()) | set(en_counts.keys()),
+        key=lambda flaw: de_counts.get(flaw, 0) + en_counts.get(flaw, 0),
         reverse=True,
     )
+    pair_flaws = sorted(pair_counts.keys(), key=lambda flaw: pair_counts.get(flaw, 0), reverse=True)
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-    if not all_flaws:
-        ax.text(0.5, 0.5, "No flaws found", ha="center", va="center")
-        ax.set_axis_off()
-        return fig, ax
+    fig_text, ax_text = plt.subplots(figsize=(12, 6))
+    fig_pair, ax_pair = plt.subplots(figsize=(12, 6))
 
-    x = list(range(len(all_flaws)))
-    width = 0.25
+    if text_flaws:
+        x_text = list(range(len(text_flaws)))
+        width = 0.35
 
-    ax.bar([i - width for i in x], [de_counts.get(f, 0) for f in all_flaws], width=width, label="de_flaws")
-    ax.bar(x, [en_counts.get(f, 0) for f in all_flaws], width=width, label="en_flaws")
-    ax.bar([i + width for i in x], [pair_counts.get(f, 0) for f in all_flaws], width=width, label="pair_flaws")
+        de_bars = ax_text.bar(
+            [i - width / 2 for i in x_text],
+            [de_counts.get(f, 0) for f in text_flaws],
+            width=width,
+            label="de_flaws",
+        )
+        en_bars = ax_text.bar(
+            [i + width / 2 for i in x_text],
+            [en_counts.get(f, 0) for f in text_flaws],
+            width=width,
+            label="en_flaws",
+        )
+        ax_text.set_xticks(x_text)
+        ax_text.set_xticklabels(text_flaws, rotation=45, ha="right")
+        ax_text.legend()
+        _add_headroom(ax_text, list(de_bars) + list(en_bars))
+        _annotate_bars(ax_text, de_bars)
+        _annotate_bars(ax_text, en_bars)
+    else:
+        ax_text.text(0.5, 0.5, "No de/en flaws found", ha="center", va="center")
+        ax_text.set_axis_off()
 
-    ax.set_title("Flaw Counts by Category")
-    ax.set_xlabel("Flaw")
-    ax.set_ylabel("Count")
-    ax.set_xticks(x)
-    ax.set_xticklabels(all_flaws, rotation=45, ha="right")
-    ax.legend()
-    fig.tight_layout()
-    return fig, ax
+    ax_text.set_title("Flaw Counts: de_flaws and en_flaws")
+    ax_text.set_xlabel("Flaw")
+    ax_text.set_ylabel("Count")
+    fig_text.tight_layout()
 
+    if pair_flaws:
+        x_pair = list(range(len(pair_flaws)))
+        pair_bars = ax_pair.bar(x_pair, [pair_counts.get(f, 0) for f in pair_flaws], width=0.6, label="pair_flaws")
+        ax_pair.set_xticks(x_pair)
+        ax_pair.set_xticklabels(pair_flaws, rotation=45, ha="right")
+        ax_pair.legend()
+        _add_headroom(ax_pair, pair_bars)
+        _annotate_bars(ax_pair, pair_bars)
+    else:
+        ax_pair.text(0.5, 0.5, "No pair flaws found", ha="center", va="center")
+        ax_pair.set_axis_off()
+
+    ax_pair.set_title("Flaw Counts: pair_flaws")
+    ax_pair.set_xlabel("Flaw")
+    ax_pair.set_ylabel("Count")
+    fig_pair.tight_layout()
+
+    return (fig_text, ax_text), (fig_pair, ax_pair)
