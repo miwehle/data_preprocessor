@@ -130,6 +130,10 @@ def has_odd_number_of_quotes(text: str, *, quote_chars: Iterable[str] = _QUOTE_C
         if prev_ch.isalnum() and next_ch.isspace() and next2_ch.lower() == "s":
             return True
 
+        # Possessive/plural apostrophe at word end: Quaestors', students'
+        if prev_ch.lower() == "s" and (next_ch == "" or next_ch.isspace() or not next_ch.isalnum()):
+            return True
+
         return False
 
     qs = set(quote_chars)
