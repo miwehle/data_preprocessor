@@ -77,15 +77,24 @@ def attach_adaptive_xtick_labels(fig, ax) -> None:
     _update()
 
 
-def _needs_vertical_value_labels(bars, annotations, renderer) -> bool:
+def _max_value_label_width_ratio(bars, annotations, renderer) -> float:
     if not bars or not annotations:
-        return False
+        return 0.0
+
+    max_ratio = 0.0
     for bar, ann in zip(bars, annotations):
         bar_width_px = bar.get_window_extent(renderer=renderer).width
-        label_width_px = ann.get_window_extent(renderer=renderer).width
-        if label_width_px > bar_width_px * 0.9:
-            return True
-    return False
+        if bar_width_px <= 0:
+            continue
+        # Measure in horizontal orientation, independent from current rotation.
+        label_width_px, _, _ = renderer.get_text_width_height_descent(
+            ann.get_text(),
+            ann.get_fontproperties(),
+            ismath=False,
+        )
+        max_ratio = max(max_ratio, label_width_px / bar_width_px)
+
+    return max_ratio
 
 
 def _set_value_label_orientation(annotations, vertical: bool) -> None:
@@ -97,11 +106,21 @@ def _set_value_label_orientation(annotations, vertical: bool) -> None:
 
 
 def attach_adaptive_value_labels(fig, bars, annotations) -> None:
+    # Hysteresis to avoid oscillation in transition widths.
+    enter_vertical_ratio = 0.90
+    exit_vertical_ratio = 0.75
     state = {"vertical": None}
 
     def _update(_event=None):
         renderer = fig.canvas.get_renderer()
-        vertical = _needs_vertical_value_labels(bars, annotations, renderer)
+        ratio = _max_value_label_width_ratio(bars, annotations, renderer)
+        if state["vertical"] is None:
+            vertical = ratio > enter_vertical_ratio
+        elif state["vertical"]:
+            vertical = ratio > exit_vertical_ratio
+        else:
+            vertical = ratio > enter_vertical_ratio
+
         if vertical != state["vertical"]:
             _set_value_label_orientation(annotations, vertical)
             state["vertical"] = vertical
