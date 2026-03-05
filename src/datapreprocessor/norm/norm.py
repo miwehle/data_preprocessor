@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Iterable, Iterator
 
-from .norm_example import CHANGES, Change, Example, NormReporter, norm_example
+from .changes import CHANGES, Change
+from .norm_example import Example, NormReporter, norm_example
 
 
 def norm_examples(

@@ -1,4 +1,5 @@
 import re
+from typing import Callable
 
 _WHITESPACE_RE = re.compile(r"\s+")
 _CTRL_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
@@ -38,3 +39,14 @@ def normalize_unicode_quotes(text: str) -> str:
 
 def fix_apostrophe_spacing(text: str) -> str:
     return _APOSTROPHE_SPACING_RE.sub("'", text)
+
+
+Change = Callable[[str], str]
+
+CHANGES: list[Change] = [
+    strip_edges,
+    remove_control_chars,
+    collapse_whitespace,
+    normalize_unicode_quotes,
+    fix_apostrophe_spacing,
+]

@@ -1,20 +1,12 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Protocol, TextIO
+from typing import Any, Dict, Protocol, TextIO
 
 from . import changes as c
+from .changes import Change
 
-Change = Callable[[str], str]
 Example = Dict[str, Any]
 
-CHANGES: list[Change] = [
-    c.strip_edges,
-    c.remove_control_chars,
-    c.collapse_whitespace,
-    c.normalize_unicode_quotes,
-    c.fix_apostrophe_spacing,
-]
-
-def apply_changes(text: str, changes: list[Change] = CHANGES) -> tuple[str, list[str]]:
+def apply_changes(text: str, changes: list[Change] = c.CHANGES) -> tuple[str, list[str]]:
     change_names: list[str] = []
     current = text
     for change in changes:
@@ -61,7 +53,7 @@ class NormReport:
 
 def norm_example(
     ex: Example,
-    changes: list[Change] = CHANGES,
+    changes: list[Change] = c.CHANGES,
     norm_reporter: NormReporter | None = None,
 ) -> Example:
     """Return a normalized copy of one translation example with de/en texts."""

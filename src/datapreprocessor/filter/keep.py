@@ -3,30 +3,8 @@ from pathlib import Path
 from typing import Protocol, TextIO
 
 from .filter import Example
-from .predicates import text_pair_predicates as tep
-from .predicates import text_predicates as te
-
-TEXT_FLAWS = [
-    te.is_blank,
-    partial(te.is_too_short, min_chars=10),
-    partial(te.is_too_long, max_chars=300),
-    te.contains_url,
-    te.contains_email,
-    # te.contains_german_chars,
-    te.contains_control_chars,
-    te.contains_invisible_format_chars,
-    te.has_odd_number_of_quotes,
-    te.has_unbalanced_brackets,
-]
-
-TEXT_PAIR_FLAWS = [
-    partial(tep.bad_length_ratio, min=0.33, max=3),
-    tep.are_equal,
-]
-
-TOKEN_FLAWS = []
-TOKEN_PAIR_FLAWS = []
-
+from .predicates.text_pair_predicates import TEXT_PAIR_FLAWS
+from .predicates.text_predicates import TEXT_FLAWS
 
 def find_flaws(flaws, *args):
     # Simplifies how matched predicates are represented in reports/logs.
