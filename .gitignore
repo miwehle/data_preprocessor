@@ -9,3 +9,4 @@ settings.json
 data/
 !tests/data/
 !tests/data/**
+/tokenize_report.txt

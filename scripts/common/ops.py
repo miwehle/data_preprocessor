@@ -4,11 +4,14 @@ from functools import partial
 from pathlib import Path
 
 from datasets import load_dataset
+from transformers import AutoTokenizer
 
 from datapreprocessor.filter.filter import filter_examples
 from datapreprocessor.filter.keep import FlawReport, keep
 from datapreprocessor.norm.norm import norm_examples
 from datapreprocessor.norm.norm_example import NormReport
+from datapreprocessor.tokenizer.tokenize_example import TokenizeReport
+from datapreprocessor.tokenizer.tokenizer import tokenize_examples
 
 from .io import load_jsonl, write_jsonl
 
@@ -60,4 +63,41 @@ def filter(
         report.close()
     print(f"Wrote {output_path}")
     print(f"Wrote {flaw_report_path}")
+    return 0
+
+
+def tokenize(
+    *,
+    input_path: str | Path,
+    output_path: str | Path,
+    tokenize_report_path: str | Path,
+    model_name: str = "Helsinki-NLP/opus-mt-de-en",
+    tokenizer_kwargs: dict | None = None,
+    tokenize_debug: bool = False,
+) -> int:
+    ds = load_jsonl(input_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    report = TokenizeReport.from_path(tokenize_report_path, debug=tokenize_debug)
+
+    effective_kwargs = {
+        "truncation": True,
+        "max_length": 256,
+        **(tokenizer_kwargs or {}),
+    }
+
+    try:
+        write_jsonl(
+            tokenize_examples(
+                ds,
+                tokenizer=tokenizer,
+                tokenize_reporter=report,
+                tokenizer_kwargs=effective_kwargs,
+            ),
+            output_path,
+        )
+    finally:
+        report.close()
+
+    print(f"Wrote {output_path}")
+    print(f"Wrote {tokenize_report_path}")
     return 0
