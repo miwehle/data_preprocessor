@@ -12,3 +12,5 @@ data/
 /tokenize_report.txt
 .vscode/extensions.json
 
+.VSCodeCounter/
+
