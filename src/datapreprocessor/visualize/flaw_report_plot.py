@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import ast
+import re
 from collections import Counter
 from pathlib import Path
+from textwrap import fill
 
 import matplotlib.pyplot as plt
 
@@ -56,6 +58,13 @@ def _add_headroom(ax, bars, ratio: float = 0.10) -> None:
     ax.set_ylim(0, max_height * (1 + ratio))
 
 
+def _format_flaw_label(label: str, width: int = 22) -> str:
+    text = label.replace("_", " ")
+    text = re.sub(r"(?<=\S)\(", " (", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return fill(text, width=width)
+
+
 def plot_flaw_counts(report_path: str | Path):
     """
     Build two separate figures:
@@ -92,7 +101,7 @@ def plot_flaw_counts(report_path: str | Path):
             label="en_flaws",
         )
         ax_text.set_xticks(x_text)
-        ax_text.set_xticklabels(text_flaws, rotation=45, ha="right")
+        ax_text.set_xticklabels([_format_flaw_label(f) for f in text_flaws], rotation=0, ha="center")
         ax_text.legend()
         _add_headroom(ax_text, list(de_bars) + list(en_bars))
         _annotate_bars(ax_text, de_bars)
@@ -110,7 +119,7 @@ def plot_flaw_counts(report_path: str | Path):
         x_pair = list(range(len(pair_flaws)))
         pair_bars = ax_pair.bar(x_pair, [pair_counts.get(f, 0) for f in pair_flaws], width=0.6, label="pair_flaws")
         ax_pair.set_xticks(x_pair)
-        ax_pair.set_xticklabels(pair_flaws, rotation=45, ha="right")
+        ax_pair.set_xticklabels([_format_flaw_label(f) for f in pair_flaws], rotation=0, ha="center")
         ax_pair.legend()
         _add_headroom(ax_pair, pair_bars)
         _annotate_bars(ax_pair, pair_bars)
