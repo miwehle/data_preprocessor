@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import ast
-import re
 from collections import Counter
 from pathlib import Path
-from textwrap import fill
 
 import matplotlib.pyplot as plt
+try:
+    from . import plot_utils as pu
+except ImportError:
+    import plot_utils as pu
 
 
 def _load_records(report_path: str | Path) -> list[dict]:
@@ -35,34 +37,6 @@ def _count_flaws(records: list[dict]) -> tuple[Counter, Counter, Counter]:
         pair_counts.update(record.get("pair_flaws", []))
 
     return de_counts, en_counts, pair_counts
-
-
-def _annotate_bars(ax, bars) -> None:
-    for bar in bars:
-        height = bar.get_height()
-        ax.annotate(
-            f"{int(height)}",
-            xy=(bar.get_x() + bar.get_width() / 2, height),
-            xytext=(0, 3),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=9,
-        )
-
-
-def _add_headroom(ax, bars, ratio: float = 0.10) -> None:
-    max_height = max((bar.get_height() for bar in bars), default=0)
-    if max_height <= 0:
-        return
-    ax.set_ylim(0, max_height * (1 + ratio))
-
-
-def _format_flaw_label(label: str, width: int = 22) -> str:
-    text = label.replace("_", " ")
-    text = re.sub(r"(?<=\S)\(", " (", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return fill(text, width=width)
 
 
 def plot_flaw_counts(report_path: str | Path):
@@ -101,11 +75,16 @@ def plot_flaw_counts(report_path: str | Path):
             label="en_flaws",
         )
         ax_text.set_xticks(x_text)
-        ax_text.set_xticklabels([_format_flaw_label(f) for f in text_flaws], rotation=0, ha="center")
+        ax_text.set_xticklabels([pu.format_wrapped_label(f) for f in text_flaws], rotation=0, ha="center")
         ax_text.legend()
-        _add_headroom(ax_text, list(de_bars) + list(en_bars))
-        _annotate_bars(ax_text, de_bars)
-        _annotate_bars(ax_text, en_bars)
+        pu.add_headroom(ax_text, list(de_bars) + list(en_bars))
+        de_annotations = pu.annotate_bars(ax_text, de_bars)
+        en_annotations = pu.annotate_bars(ax_text, en_bars)
+        pu.attach_adaptive_value_labels(
+            fig_text,
+            list(de_bars) + list(en_bars),
+            de_annotations + en_annotations,
+        )
     else:
         ax_text.text(0.5, 0.5, "No de/en flaws found", ha="center", va="center")
         ax_text.set_axis_off()
@@ -113,16 +92,19 @@ def plot_flaw_counts(report_path: str | Path):
     ax_text.set_title("Flaw Counts: de_flaws and en_flaws")
     ax_text.set_xlabel("Flaw")
     ax_text.set_ylabel("Count")
+    pu.set_coord_display(ax_text)
     fig_text.tight_layout()
+    pu.attach_adaptive_xtick_labels(fig_text, ax_text)
 
     if pair_flaws:
         x_pair = list(range(len(pair_flaws)))
         pair_bars = ax_pair.bar(x_pair, [pair_counts.get(f, 0) for f in pair_flaws], width=0.6, label="pair_flaws")
         ax_pair.set_xticks(x_pair)
-        ax_pair.set_xticklabels([_format_flaw_label(f) for f in pair_flaws], rotation=0, ha="center")
+        ax_pair.set_xticklabels([pu.format_wrapped_label(f) for f in pair_flaws], rotation=0, ha="center")
         ax_pair.legend()
-        _add_headroom(ax_pair, pair_bars)
-        _annotate_bars(ax_pair, pair_bars)
+        pu.add_headroom(ax_pair, pair_bars)
+        pair_annotations = pu.annotate_bars(ax_pair, pair_bars)
+        pu.attach_adaptive_value_labels(fig_pair, list(pair_bars), pair_annotations)
     else:
         ax_pair.text(0.5, 0.5, "No pair flaws found", ha="center", va="center")
         ax_pair.set_axis_off()
@@ -130,6 +112,17 @@ def plot_flaw_counts(report_path: str | Path):
     ax_pair.set_title("Flaw Counts: pair_flaws")
     ax_pair.set_xlabel("Flaw")
     ax_pair.set_ylabel("Count")
+    pu.set_coord_display(ax_pair)
     fig_pair.tight_layout()
+    pu.attach_adaptive_xtick_labels(fig_pair, ax_pair)
 
     return (fig_text, ax_text), (fig_pair, ax_pair)
+
+
+def main() -> None:
+    plot_flaw_counts("data/europarl/reports/flaw_report.txt")
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
