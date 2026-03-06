@@ -50,7 +50,14 @@ def load_pair_lengths(dataset_path: str | Path) -> tuple[list[int], list[int]]:
     return de_lengths, en_lengths
 
 
-def plot_pair_length_histogram(dataset_path: str | Path, *, max_bins: int = 60):
+def plot_pair_length_histogram(
+    dataset_path: str | Path,
+    *,
+    max_bins: int = 60,
+    x_scale: str = "linear",
+    y_scale: str = "linear",
+    interactive_scale_toggle: bool = True,
+):
     de_lengths, en_lengths = load_pair_lengths(dataset_path)
 
     fig, ax = plt.subplots(figsize=(11, 6))
@@ -78,11 +85,16 @@ def plot_pair_length_histogram(dataset_path: str | Path, *, max_bins: int = 60):
         linewidth=0.25,
         label="en",
     )
-    ax.set_title("Histogram of Pair Lengths (de/en)")
+    ax.set_title("Histogram of Pair Lengths (de/en) - press 'x' or 'y' to toggle scaling")
     ax.set_xlabel("Text length (characters)")
     ax.set_ylabel("Count")
     ax.legend()
     ax.grid(axis="y", alpha=0.25)
+    pu.set_x_axis_scale(ax, x_scale)
+    pu.set_y_axis_scale(ax, y_scale)
+    if interactive_scale_toggle:
+        pu.attach_x_scale_toggle(fig, ax, key="x")
+        pu.attach_y_scale_toggle(fig, ax, key="y")
     pu.set_coord_display(ax)
     fig.tight_layout()
 
@@ -96,3 +108,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+x

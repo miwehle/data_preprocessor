@@ -184,3 +184,54 @@ def integer_histogram_bins(*value_series, max_bins: int = 60) -> list[float]:
     start = min_value - 0.5
     n_bins = math.ceil(value_span / step)
     return [start + i * step for i in range(n_bins + 1)]
+
+
+def _validate_scale(scale: str) -> None:
+    if scale not in {"linear", "log"}:
+        raise ValueError("scale must be 'linear' or 'log'")
+
+
+def set_x_axis_scale(ax, scale: str) -> None:
+    _validate_scale(scale)
+    ax.set_xscale(scale)
+
+
+def set_y_axis_scale(ax, scale: str) -> None:
+    _validate_scale(scale)
+    ax.set_yscale(scale)
+
+
+def attach_axis_scale_toggle(fig, ax, *, axis: str, key: str):
+    if axis not in {"x", "y"}:
+        raise ValueError("axis must be 'x' or 'y'")
+
+    scales = ("linear", "log")
+
+    def toggle() -> str:
+        current = ax.get_xscale() if axis == "x" else ax.get_yscale()
+        if current not in scales:
+            next_scale = "linear"
+        else:
+            next_scale = scales[(scales.index(current) + 1) % len(scales)]
+        if axis == "x":
+            set_x_axis_scale(ax, next_scale)
+        else:
+            set_y_axis_scale(ax, next_scale)
+        fig.canvas.draw_idle()
+        return next_scale
+
+    def _on_key(event) -> None:
+        pressed = (event.key or "").lower()
+        if pressed == key.lower():
+            toggle()
+
+    fig.canvas.mpl_connect("key_press_event", _on_key)
+    return toggle
+
+
+def attach_x_scale_toggle(fig, ax, *, key: str = "x"):
+    return attach_axis_scale_toggle(fig, ax, axis="x", key=key)
+
+
+def attach_y_scale_toggle(fig, ax, *, key: str = "y"):
+    return attach_axis_scale_toggle(fig, ax, axis="y", key=key)
