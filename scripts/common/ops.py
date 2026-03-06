@@ -10,7 +10,7 @@ from datapreprocessor.filter import FlawReport, filter_examples, keep
 from datapreprocessor.norm import NormReport, norm_examples
 from datapreprocessor.tokenizer import TokenizeReport, tokenize_examples
 
-from .io import load_jsonl, write_jsonl
+from .io import load_examples, write_examples
 
 
 def download(
@@ -23,7 +23,7 @@ def download(
 ) -> int:
     ds = load_dataset(dataset, config, split=split)
     rows = ds if max_rows is None else (ex for i, ex in enumerate(ds) if i < max_rows)
-    write_jsonl(rows, output)
+    write_examples(rows, output)
     print(f"Wrote {output}")
     return 0
 
@@ -35,10 +35,10 @@ def norm(
     norm_report_path: str | Path,
     norm_debug: bool = False,
 ) -> int:
-    ds = load_jsonl(input_path)
+    ds = load_examples(input_path)
     report = NormReport.from_path(norm_report_path, debug=norm_debug)
     try:
-        write_jsonl(norm_examples(ds, norm_reporter=report), output_path)
+        write_examples(norm_examples(ds, norm_reporter=report), output_path)
     finally:
         report.close()
     print(f"Wrote {output_path}")
@@ -52,10 +52,10 @@ def filter(
     output_path: str | Path,
     flaw_report_path: str | Path,
 ) -> int:
-    ds = load_jsonl(input_path)
+    ds = load_examples(input_path)
     report = FlawReport.from_path(flaw_report_path)
     try:
-        write_jsonl(filter_examples(ds, partial(keep, flaw_reporter=report)), output_path)
+        write_examples(filter_examples(ds, partial(keep, flaw_reporter=report)), output_path)
     finally:
         report.close()
     print(f"Wrote {output_path}")
@@ -72,7 +72,7 @@ def tokenize(
     tokenizer_kwargs: dict | None = None,
     tokenize_debug: bool = False,
 ) -> int:
-    ds = load_jsonl(input_path)
+    ds = load_examples(input_path)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     report = TokenizeReport.from_path(tokenize_report_path, debug=tokenize_debug)
 
@@ -83,7 +83,7 @@ def tokenize(
     }
 
     try:
-        write_jsonl(
+        write_examples(
             tokenize_examples(
                 ds,
                 tokenizer=tokenizer,
