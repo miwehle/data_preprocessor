@@ -29,7 +29,7 @@ class NormReport:
         self.seq_no = 0
 
     @classmethod
-    def from_path(cls, path: str | Path = "norm_report.txt", *, debug: bool = False) -> "NormReport":
+    def from_path(cls, path: str | Path, *, debug: bool = False) -> "NormReport":
         return cls(open(path, "w", encoding="utf-8"), debug=debug)
 
     def note_change(self, before: str, after: str, norm_changes: list[str]) -> None:

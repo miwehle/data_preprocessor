@@ -23,7 +23,7 @@ class TokenizeReport:
     @classmethod
     def from_path(
         cls,
-        path: str | Path = "tokenize_report.txt",
+        path: str | Path,
         *,
         debug: bool = False,
     ) -> "TokenizeReport":

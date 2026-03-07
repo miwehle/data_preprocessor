@@ -32,7 +32,7 @@ class FlawReport:
         self.seq_no = 0
 
     @classmethod
-    def from_path(cls, path: str | Path = "flaw_report.txt") -> "FlawReport":
+    def from_path(cls, path: str | Path) -> "FlawReport":
         return cls(open(path, "w", encoding="utf-8"))
 
     def note_flaws(self, de_flaws, en_flaws, pair_flaws):
