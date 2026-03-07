@@ -21,20 +21,12 @@ class TokenizeReport:
         self.seq_no = 0
 
     @classmethod
-    def from_path(
-        cls,
-        path: str | Path,
-        *,
-        debug: bool = False,
-    ) -> "TokenizeReport":
+    def from_path(cls, path: str | Path, *, debug: bool = False) -> "TokenizeReport":
         return cls(open(path, "w", encoding="utf-8"), debug=debug)
 
     def note_tokenization(self, token_lengths: dict[str, int]) -> None:
         self.seq_no += 1
-        record: dict[str, Any] = {
-            "seq_no": self.seq_no,
-            "token_lengths": token_lengths,
-        }
+        record: dict[str, Any] = {"seq_no": self.seq_no, "token_lengths": token_lengths}
         self.out.write(f"{record}\\n")
 
     def flush(self) -> None:

@@ -1,6 +1,6 @@
-#PV2
-#import time
-#t = time.time()
+# PV2
+# import time
+# t = time.time()
 
 import os
 import filter.keep as c
@@ -13,7 +13,7 @@ from transformers import AutoTokenizer
 class DataPreprocessor:
     """
     load
-    
+
     # auf der internen Rep:
     filter   # inkl. norm
 
@@ -26,7 +26,7 @@ class DataPreprocessor:
         self.tok = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-de-en")
         self.data = None
         self.flaws = {}
-    
+
     @classmethod
     def _check(cls, de: str, en: str) -> bool:
         flaws = c.find_flaws(c.TEXT_FLAWS, de)
@@ -46,10 +46,7 @@ class DataPreprocessor:
         self.data = []
         for i in range(min(num_pairs, len(dataset))):
             item = dataset[i]
-            self.data.append({
-                "de": item["translation"]["de"],
-                "en": item["translation"]["en"]
-            })
+            self.data.append({"de": item["translation"]["de"], "en": item["translation"]["en"]})
         print("< load")
 
     def preprocess(self, block_size):
@@ -64,12 +61,11 @@ class DataPreprocessor:
                 en = normalized["translation"]["en"]
                 flaws = self._check(de, en)
                 if len(flaws) == 0:
-                  de_tokens = self.tok(item["de"], truncation=True, max_length=block_size)
-                  en_tokens = self.tok(item["en"], truncation=True, max_length=block_size)
-                  tokenized_data.append({
-                      "de": de_tokens["input_ids"],
-                      "en": en_tokens["input_ids"]
-                  })
+                    de_tokens = self.tok(item["de"], truncation=True, max_length=block_size)
+                    en_tokens = self.tok(item["en"], truncation=True, max_length=block_size)
+                    tokenized_data.append(
+                        {"de": de_tokens["input_ids"], "en": en_tokens["input_ids"]}
+                    )
                 else:
                     self.flaws[idx] = flaws
             self.data = tokenized_data
@@ -79,18 +75,18 @@ class DataPreprocessor:
         """Speichert die Daten mit save_to_disk (Arrow) oder to_json (JSONL)"""
         if self.data:
             dataset = Dataset.from_list(self.data)
-            if file.endswith('.jsonl'):
+            if file.endswith(".jsonl"):
                 dataset.to_json(file)
             else:
                 dataset.save_to_disk(file)
 
     def save_txt(self, dir):
         """Schreibt die Daten menschenlesbar in einen Ordner,
-          gesplittet in Dateien à pairs_per_file."""
+        gesplittet in Dateien à pairs_per_file."""
         if not self.data:
             return
 
-        pairs_per_file=10_000
+        pairs_per_file = 10_000
         os.makedirs(dir, exist_ok=True)
 
         file_idx = 0
@@ -99,13 +95,12 @@ class DataPreprocessor:
 
         try:
             for i, item in enumerate(self.data, 1):
-
                 # Neue Datei öffnen, wenn nötig
                 if pair_count == 0:
                     path = os.path.join(dir, f"{file_idx:04d}.txt")
                     f = open(path, "w", encoding="utf-8")
 
-                f.write(f"- {i-1} -\n")
+                f.write(f"- {i - 1} -\n")
                 f.write(f"DE: {item['de']}\n")
                 f.write(f"EN: {item['en']}\n\n")
 
@@ -128,7 +123,8 @@ class DataPreprocessor:
         self.preprocess(256)
         self.save("data/arrow/europarl.arrow")
 
+
 if __name__ == "__main__":
-    #print("Import:", time.time() - t)
+    # print("Import:", time.time() - t)
     preprocessor = DataPreprocessor()
     preprocessor.main()

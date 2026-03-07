@@ -118,9 +118,7 @@ def _max_value_label_width_ratio(bars, annotations, renderer) -> float:
             continue
         # Measure in horizontal orientation, independent from current rotation.
         label_width_px, _, _ = renderer.get_text_width_height_descent(
-            ann.get_text(),
-            ann.get_fontproperties(),
-            ismath=False,
+            ann.get_text(), ann.get_fontproperties(), ismath=False
         )
         max_ratio = max(max_ratio, label_width_px / bar_width_px)
 

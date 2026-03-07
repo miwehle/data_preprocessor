@@ -37,12 +37,7 @@ def _run_with_optional_report(
 
 
 def download(
-    *,
-    dataset: str,
-    config: str,
-    split: str,
-    output: str | Path,
-    max_records: int | None = None,
+    *, dataset: str, config: str, split: str, output: str | Path, max_records: int | None = None
 ) -> None:
     ds = load_dataset(dataset, config, split=split)
     records = ds if max_records is None else ds.select(range(min(max_records, len(ds))))
@@ -92,11 +87,7 @@ def tokenize(
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    effective_kwargs = {
-        "truncation": True,
-        "max_length": 256,
-        **(tokenizer_kwargs or {}),
-    }
+    effective_kwargs = {"truncation": True, "max_length": 256, **(tokenizer_kwargs or {})}
 
     _run_with_optional_report(
         input_path=input_path,
@@ -104,9 +95,6 @@ def tokenize(
         report_path=tokenize_report_path,
         make_report=lambda path: TokenizeReport.from_path(path, debug=tokenize_debug),
         transform=lambda ds, report: tokenize_examples(
-            ds,
-            tokenizer=tokenizer,
-            tokenize_reporter=report,
-            tokenizer_kwargs=effective_kwargs,
+            ds, tokenizer=tokenizer, tokenize_reporter=report, tokenizer_kwargs=effective_kwargs
         ),
     )

@@ -17,10 +17,7 @@ def filter_examples(ds: Iterable[Example], keep: Predicate) -> Iterator[Example]
 
 
 def save_to_disk(
-    it: Iterable[Example],
-    out_dir: str,
-    *,
-    features: Optional[datasets.Features] = None,
+    it: Iterable[Example], out_dir: str, *, features: Optional[datasets.Features] = None
 ) -> datasets.Dataset:
     """
     Materialisiert einen Iterator zu einem HF Dataset und speichert es.

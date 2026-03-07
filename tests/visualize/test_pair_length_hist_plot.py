@@ -34,10 +34,7 @@ def test_load_pair_lengths_reads_translation_pairs() -> None:
 
 def test_plot_pair_length_histogram_returns_axis_with_two_histograms() -> None:
     dataset_path = _local_temp_jsonl(
-        [
-            '{"translation": {"de": "a", "en": "bb"}}',
-            '{"translation": {"de": "ccc", "en": "dddd"}}',
-        ]
+        ['{"translation": {"de": "a", "en": "bb"}}', '{"translation": {"de": "ccc", "en": "dddd"}}']
     )
 
     try:
@@ -52,17 +49,11 @@ def test_plot_pair_length_histogram_returns_axis_with_two_histograms() -> None:
 
 def test_plot_pair_length_histogram_accepts_log_scale_on_call() -> None:
     dataset_path = _local_temp_jsonl(
-        [
-            '{"translation": {"de": "a", "en": "bb"}}',
-            '{"translation": {"de": "ccc", "en": "dddd"}}',
-        ]
+        ['{"translation": {"de": "a", "en": "bb"}}', '{"translation": {"de": "ccc", "en": "dddd"}}']
     )
     try:
         _, ax = plot_pair_length_histogram(
-            dataset_path,
-            max_bins=5,
-            y_scale="log",
-            interactive_scale_toggle=False,
+            dataset_path, max_bins=5, y_scale="log", interactive_scale_toggle=False
         )
     finally:
         dataset_path.unlink(missing_ok=True)
@@ -78,12 +69,7 @@ def test_plot_pair_length_histogram_supports_all_axis_scale_combinations() -> No
             '{"translation": {"de": "eeeee", "en": "ffffff"}}',
         ]
     )
-    combinations = [
-        ("linear", "linear"),
-        ("log", "linear"),
-        ("linear", "log"),
-        ("log", "log"),
-    ]
+    combinations = [("linear", "linear"), ("log", "linear"), ("linear", "log"), ("log", "log")]
     try:
         for x_scale, y_scale in combinations:
             _, ax = plot_pair_length_histogram(

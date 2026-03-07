@@ -38,6 +38,7 @@ _EMAIL_RE = re.compile(
 
 _GERMAN_CHARS = re.compile(r"[äöüÄÖÜß]")
 
+
 def contains_url(text: str) -> bool:
     return _URL_RE.search(text) is not None
 
@@ -45,11 +46,13 @@ def contains_url(text: str) -> bool:
 def contains_email(text: str) -> bool:
     return _EMAIL_RE.search(text) is not None
 
+
 def contains_german_chars(text: str) -> bool:
     return _GERMAN_CHARS.search(text)
 
 
 # --- Whitespace / length -----------------------------------------------------
+
 
 def is_blank(text: str) -> bool:
     return text.strip() == ""
@@ -68,6 +71,7 @@ def is_too_long(text: str, *, max_chars: int) -> bool:
 
 
 # --- Unicode oddities --------------------------------------------------------
+
 
 def contains_control_chars(text: str, *, allow: str = "\t\n\r") -> bool:
     """
@@ -93,9 +97,7 @@ def contains_invisible_format_chars(text: str) -> bool:
 
 # --- Quotes / brackets (simple heuristics) -----------------------------------
 
-_QUOTE_CHARS = {
-    '"', "'", "„", "“", "”", "‚", "‘", "’", "«", "»",
-}
+_QUOTE_CHARS = {'"', "'", "„", "“", "”", "‚", "‘", "’", "«", "»"}
 _BRACKET_PAIRS = {
     "(": ")",
     "[": "]",
@@ -117,6 +119,7 @@ def has_odd_number_of_quotes(text: str, *, quote_chars: Iterable[str] = _QUOTE_C
     ``can't``, ``John's`` and noisy spacing artifacts like ``minute' s``.
     This reduces false positives for English possessive/contraction forms.
     """
+
     def looks_like_apostrophe(i: int) -> bool:
         prev_ch = text[i - 1] if i > 0 else ""
         next_ch = text[i + 1] if i + 1 < len(text) else ""

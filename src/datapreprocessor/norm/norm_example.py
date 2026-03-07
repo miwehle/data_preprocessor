@@ -36,10 +36,7 @@ class NormReport:
         self.seq_no += 1
         if not norm_changes:
             return
-        record = {
-            "seq_no": self.seq_no,
-            "norm_changes": norm_changes,
-        }
+        record = {"seq_no": self.seq_no, "norm_changes": norm_changes}
         if self.debug:
             record["before"] = before
             record["after"] = after
@@ -53,11 +50,10 @@ class NormReport:
 
 
 def norm_example(
-    ex: Example,
-    changes: Iterable[Change] = c.CHANGES,
-    norm_reporter: NormReporter | None = None,
+    ex: Example, changes: Iterable[Change] = c.CHANGES, norm_reporter: NormReporter | None = None
 ) -> Example:
     """Return a normalized copy of one translation example with de/en texts."""
+
     def norm(s: str) -> str:
         """Normalize text by removing control chars and collapsing whitespace."""
         before = str(s)

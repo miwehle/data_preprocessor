@@ -19,4 +19,6 @@ def test_norm_report_matches_expected():
         report.close()
         actual_report = root_dir / "norm_report.txt"
         expected_report = root_dir / "tests" / "expected" / "norm" / "norm_report.txt"
-        assert actual_report.read_text(encoding="utf-8") == expected_report.read_text(encoding="utf-8")
+        assert actual_report.read_text(encoding="utf-8") == expected_report.read_text(
+            encoding="utf-8"
+        )

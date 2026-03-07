@@ -6,6 +6,7 @@ from .filter import Example
 from .predicates.text_pair_predicates import TEXT_PAIR_FLAWS
 from .predicates.text_predicates import TEXT_FLAWS
 
+
 def find_flaws(flaws, *args):
     # Simplifies how matched predicates are represented in reports/logs.
     def format_flaw(f):
@@ -38,7 +39,7 @@ class FlawReport:
     def note_flaws(self, de_flaws, en_flaws, pair_flaws):
         self.seq_no += 1
 
-        if (de_flaws != [] or en_flaws != [] or pair_flaws != []):
+        if de_flaws != [] or en_flaws != [] or pair_flaws != []:
             record = {
                 "seq_no": self.seq_no,
                 "de_flaws": de_flaws,
@@ -61,6 +62,7 @@ def keep(
     flaw_reporter: FlawReporter | None = None,
 ):
     """Return True for clean examples and optionally report flaw findings."""
+
     def check(x, flaws):
         return find_flaws(flaws, x)
 

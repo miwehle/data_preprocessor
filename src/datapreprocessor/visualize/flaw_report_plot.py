@@ -84,9 +84,7 @@ def plot_flaw_counts(report_path: str | Path):
         de_annotations = pu.annotate_bars(ax_text, de_bars)
         en_annotations = pu.annotate_bars(ax_text, en_bars)
         pu.attach_adaptive_value_labels(
-            fig_text,
-            list(de_bars) + list(en_bars),
-            de_annotations + en_annotations,
+            fig_text, list(de_bars) + list(en_bars), de_annotations + en_annotations
         )
     else:
         ax_text.text(0.5, 0.5, "No de/en flaws found", ha="center", va="center")

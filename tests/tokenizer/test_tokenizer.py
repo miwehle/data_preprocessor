@@ -11,10 +11,7 @@ class DummyTokenizer:
         if kwargs.get("truncation"):
             max_length = int(kwargs.get("max_length", len(tokens)))
             tokens = tokens[:max_length]
-        return {
-            "input_ids": tokens,
-            "attention_mask": [1] * len(tokens),
-        }
+        return {"input_ids": tokens, "attention_mask": [1] * len(tokens)}
 
 
 def test_tokenize_report_matches_expected():
@@ -43,16 +40,11 @@ def test_tokenize_report_matches_expected():
 def test_tokenize_example_adds_expected_structure():
     ex = {
         "id": "sample-1",
-        "translation": {
-            "de": "eins zwei drei vier",
-            "en": "one two three four",
-        },
+        "translation": {"de": "eins zwei drei vier", "en": "one two three four"},
     }
 
     out = tokenize_example(
-        ex,
-        tokenizer=DummyTokenizer(),
-        tokenizer_kwargs={"truncation": True, "max_length": 3},
+        ex, tokenizer=DummyTokenizer(), tokenizer_kwargs={"truncation": True, "max_length": 3}
     )
 
     assert out["id"] == "sample-1"

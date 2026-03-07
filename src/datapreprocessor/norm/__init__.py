@@ -1,4 +1,4 @@
-﻿from .changes import CHANGES, Change
+from .changes import CHANGES, Change
 from .norm import norm_examples
 from .norm_example import Example, NormReport, NormReporter, apply_changes, norm_example
 

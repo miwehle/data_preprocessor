@@ -14,8 +14,5 @@ def tokenize_examples(
     """Yield tokenized examples from an input iterable."""
     for ex in ds:
         yield tokenize_example(
-            ex,
-            tokenizer=tokenizer,
-            tokenize_reporter=tokenize_reporter,
-            **tokenize_example_kwargs,
+            ex, tokenizer=tokenizer, tokenize_reporter=tokenize_reporter, **tokenize_example_kwargs
         )
