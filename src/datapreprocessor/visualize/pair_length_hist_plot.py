@@ -30,16 +30,28 @@ def load_pair_lengths(dataset_path: str | Path) -> tuple[list[int], list[int]]:
     de_lengths: list[int] = []
     en_lengths: list[int] = []
 
-    with path.open("r", encoding="utf-8") as f:
-        for line_no, line in enumerate(f, start=1):
-            raw = line.strip()
-            if not raw:
-                continue
-            try:
-                record = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"Invalid JSON at line {line_no} in {path}") from exc
+    if path.suffix.lower() == ".jsonl":
+        with path.open("r", encoding="utf-8") as f:
+            for line_no, line in enumerate(f, start=1):
+                raw = line.strip()
+                if not raw:
+                    continue
+                try:
+                    record = json.loads(raw)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"Invalid JSON at line {line_no} in {path}") from exc
 
+                pair = _extract_pair(record)
+                if pair is None:
+                    continue
+                de, en = pair
+                de_lengths.append(len(de))
+                en_lengths.append(len(en))
+    else:
+        from datasets import load_from_disk
+
+        ds = load_from_disk(str(path))
+        for record in ds:
             pair = _extract_pair(record)
             if pair is None:
                 continue
@@ -102,7 +114,11 @@ def plot_pair_length_histogram(
 
 
 def main() -> None:
-    plot_pair_length_histogram("data/europarl/raw/europarl_de-en_train_1000.jsonl")
+    run("data/europarl/raw/europarl_de-en_train_1000.jsonl")
+
+
+def run(dataset_path: str | Path) -> None:
+    plot_pair_length_histogram(dataset_path)
     plt.show()
 
 

@@ -126,7 +126,7 @@ def plot_flaw_counts(report_path: str | Path):
     return (fig_text, ax_text), (fig_pair, ax_pair)
 
 
-def run(report_path: str | Path) -> None:
+def run(report_path: str | Path = "flaw_report.txt") -> None:
     plot_flaw_counts(report_path)
     plt.show()
 
