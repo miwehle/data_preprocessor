@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -9,11 +9,12 @@ from ipy.ops import filter
 
 
 def main() -> int:
-    return filter(
+    filter(
         input_path=dataset_path("europarl", "normalized", "europarl_de-en_train.norm.jsonl"),
         output_path=dataset_path("europarl", "filtered", "europarl_de-en_train.filtered.jsonl"),
         flaw_report_path=dataset_path("europarl", "reports", "flaw_report.txt"),
     )
+    return 0
 
 
 if __name__ == "__main__":

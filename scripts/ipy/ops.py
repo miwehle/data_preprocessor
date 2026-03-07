@@ -20,12 +20,11 @@ def download(
     split: str,
     output: str | Path,
     max_records: int | None = None,
-) -> int:
+) -> None:
     ds = load_dataset(dataset, config, split=split)
     records = ds if max_records is None else ds.select(range(min(max_records, len(ds))))
     save(records, output)
     print(f"Wrote {output}")
-    return 0
 
 
 def norm(
@@ -34,7 +33,7 @@ def norm(
     output_path: str | Path,
     norm_report_path: str | Path,
     norm_debug: bool = False,
-) -> int:
+) -> None:
     ds = load(input_path)
     report = NormReport.from_path(norm_report_path, debug=norm_debug)
     try:
@@ -43,7 +42,6 @@ def norm(
         report.close()
     print(f"Wrote {output_path}")
     print(f"Wrote {norm_report_path}")
-    return 0
 
 
 def filter(
@@ -51,7 +49,7 @@ def filter(
     input_path: str | Path,
     output_path: str | Path,
     flaw_report_path: str | Path,
-) -> int:
+) -> None:
     ds = load(input_path)
     report = FlawReport.from_path(flaw_report_path)
     try:
@@ -60,7 +58,6 @@ def filter(
         report.close()
     print(f"Wrote {output_path}")
     print(f"Wrote {flaw_report_path}")
-    return 0
 
 
 def tokenize(
@@ -71,7 +68,7 @@ def tokenize(
     model_name: str = "Helsinki-NLP/opus-mt-de-en",
     tokenizer_kwargs: dict | None = None,
     tokenize_debug: bool = False,
-) -> int:
+) -> None:
     ds = load(input_path)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     report = TokenizeReport.from_path(tokenize_report_path, debug=tokenize_debug)
@@ -97,4 +94,3 @@ def tokenize(
 
     print(f"Wrote {output_path}")
     print(f"Wrote {tokenize_report_path}")
-    return 0

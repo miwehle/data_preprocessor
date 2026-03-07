@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -9,12 +9,13 @@ from ipy.ops import norm
 
 
 def main() -> int:
-    return norm(
+    norm(
         input_path=dataset_path("europarl", "raw", "europarl_de-en_train.jsonl"),
         output_path=dataset_path("europarl", "normalized", "europarl_de-en_train.norm.jsonl"),
         norm_report_path=dataset_path("europarl", "reports", "norm_report.txt"),
         norm_debug=False,
     )
+    return 0
 
 
 if __name__ == "__main__":

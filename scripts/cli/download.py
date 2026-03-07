@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -9,13 +9,14 @@ from ipy.ops import download
 
 
 def main() -> int:
-    return download(
+    download(
         dataset="Helsinki-NLP/europarl",
         config="de-en",
         split="train",
         output=dataset_path("europarl", "raw", "europarl_de-en_train.jsonl"),
         max_records=None,
     )
+    return 0
 
 
 if __name__ == "__main__":
