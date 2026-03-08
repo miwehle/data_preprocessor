@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 """Thin IPython-facing orchestration layer.
 
 This module coordinates I/O and delegates transformation logic to
 `src/datapreprocessor/*`. Keep business logic out of this file.
 """
+
+from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from contextlib import closing, nullcontext
@@ -16,6 +16,7 @@ from transformers import AutoTokenizer
 
 from datapreprocessor.filter import FlawReport, filter_examples, keep
 from datapreprocessor.load import download_records
+from datapreprocessor.map import to_training_schema
 from datapreprocessor.norm import NormReport, norm_examples
 from datapreprocessor.tokenizer import TokenizeReport, tokenize_examples
 
@@ -119,3 +120,26 @@ def tokenize(
             ds, tokenizer=tokenizer, tokenize_reporter=report, tokenizer_kwargs=effective_kwargs
         ),
     )
+
+
+def map(
+    *,
+    input_path: str | Path,
+    output_path: str | Path,
+    id_key: str = "id",
+    tokenized_key: str = "tokenized_translation",
+    src_lang: str = "de",
+    tgt_lang: str = "en",
+    include_text: bool = False,
+) -> None:
+    ds = load(input_path)
+    mapped = to_training_schema(
+        ds,
+        id_key=id_key,
+        tokenized_key=tokenized_key,
+        src_lang=src_lang,
+        tgt_lang=tgt_lang,
+        include_text=include_text,
+    )
+    save(mapped, output_path)
+    print(f"Wrote {output_path}")
