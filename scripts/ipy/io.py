@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Iterable
 
-Record = dict[str, Any]
+from datapreprocessor.types import Example
 
 
 def dataset_path(dataset: str, stage: str, filename: str) -> Path:
@@ -31,23 +31,23 @@ def load(path: str | Path):
     return load_from_disk(str(dataset_path))
 
 
-def save(records: Iterable[Record], output_path: str | Path) -> None:
+def save(examples: Iterable[Example], output_path: str | Path) -> None:
     def is_jsonl_path(output: Path) -> bool:
         return output.suffix.lower() == ".jsonl"
 
-    def write_jsonl(records: Iterable[Record], out_path: Path) -> None:
+    def write_jsonl(examples: Iterable[Example], out_path: Path) -> None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w", encoding="utf-8") as f:
-            for ex in records:
+            for ex in examples:
                 f.write(json.dumps(ex, ensure_ascii=False) + "\n")
 
     from datasets import Dataset
 
     out_path = Path(output_path)
     if is_jsonl_path(out_path):
-        write_jsonl(records, out_path)
+        write_jsonl(examples, out_path)
         return
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    ds = records if isinstance(records, Dataset) else Dataset.from_list(list(records))
+    ds = examples if isinstance(examples, Dataset) else Dataset.from_list(list(examples))
     ds.save_to_disk(str(out_path))

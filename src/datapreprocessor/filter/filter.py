@@ -1,11 +1,11 @@
 # DEFINITION stream_or_save
 
 from __future__ import annotations
-from typing import Callable, Dict, Any, Iterable, Iterator, Optional
+from typing import Callable, Iterable, Iterator, Optional
 import datasets
 
+from ..types import Example
 
-Example = Dict[str, Any]
 Predicate = Callable[[Example], bool]
 
 

@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Any, Dict, Iterable, Protocol, TextIO
+from typing import Iterable, Protocol, TextIO
 
 from . import changes as c
 from .changes import Change
-
-Example = Dict[str, Any]
+from ..types import Example
 
 
 def apply_changes(text: str, changes: Iterable[Change] = c.CHANGES) -> tuple[str, list[str]]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Mapping, Protocol, TextIO
 
-Example = Dict[str, Any]
+from ..types import Example
 
 
 class TokenizerLike(Protocol):
