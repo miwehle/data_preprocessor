@@ -6,9 +6,12 @@ This module coordinates I/O and delegates transformation logic to
 
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 from collections.abc import Callable, Iterable
 from contextlib import closing, nullcontext
+from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -23,7 +26,7 @@ from datapreprocessor.tokenizer import (
     tokenize_examples,
 )
 
-from .io import dataset_path, load, save
+from .io import load, save
 
 
 def _dataset_name_for_filesystem(dataset: str) -> str:
@@ -33,6 +36,49 @@ def _dataset_name_for_filesystem(dataset: str) -> str:
     if safe:
         return safe
     return "dataset"
+
+
+def _next_available_run_dir(base_dir: Path) -> Path:
+    if not base_dir.exists():
+        return base_dir
+
+    i = 1
+    while True:
+        candidate = Path(f"{base_dir} ({i})")
+        if not candidate.exists():
+            return candidate
+        i += 1
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _current_git_commit_short() -> str | None:
+    try:
+        out = subprocess.check_output(
+            ["git", "rev-parse", "--short=12", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            cwd=str(_repo_root()),
+        )
+        commit = out.strip()
+        return commit if commit else None
+    except Exception:
+        return None
+
+
+def _current_git_status() -> str:
+    try:
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            cwd=str(_repo_root()),
+        )
+        return "no local changes" if out.strip() == "" else "local changes exist"
+    except Exception:
+        return "local changes exist"
 
 
 def _run_with_optional_report(
@@ -172,21 +218,6 @@ def preprocess(
     """Run the end-to-end preprocessing pipeline with practical defaults."""
 
     dataset_name = _dataset_name_for_filesystem(dataset)
-    base_name = f"{dataset_name}_{config}_{split}"
-    effective_paths: dict[str, Path] = {
-        "raw_output": dataset_path(dataset_name, "raw", f"{base_name}.jsonl"),
-        "norm_output": dataset_path(dataset_name, "normalized", f"{base_name}.norm.jsonl"),
-        "filter_output": dataset_path(dataset_name, "filtered", f"{base_name}.filtered.jsonl"),
-        "tokenize_output": dataset_path(dataset_name, "tokenized", f"{base_name}.tokenized.jsonl"),
-        "map_output": dataset_path(dataset_name, "mapped", f"{base_name}.mapped"),
-        "norm_report": dataset_path(dataset_name, "reports", "norm_report.txt"),
-        "flaw_report": dataset_path(dataset_name, "reports", "flaw_report.txt"),
-        "tokenize_report": dataset_path(dataset_name, "reports", "tokenize_report.txt"),
-    }
-    if paths:
-        for key, value in paths.items():
-            if key in effective_paths:
-                effective_paths[key] = Path(value)
 
     effective_download_cfg = {
         "max_records": None,
@@ -212,6 +243,50 @@ def preprocess(
         "include_text": False,
         **(map_cfg or {}),
     }
+
+    run_dir_name = f"{dataset_name}_{config}_{split}"
+    max_records = effective_download_cfg["max_records"]
+    if max_records is not None:
+        run_dir_name = f"{run_dir_name}_{max_records}"
+
+    run_dir = _next_available_run_dir(Path.cwd() / run_dir_name)
+    effective_paths: dict[str, Path] = {
+        "raw_output": run_dir / f"{dataset_name}.raw.jsonl",
+        "norm_output": run_dir / f"{dataset_name}.norm.jsonl",
+        "filter_output": run_dir / f"{dataset_name}.filtered.jsonl",
+        "tokenize_output": run_dir / f"{dataset_name}.tokenized.jsonl",
+        "map_output": run_dir / f"{dataset_name}.mapped",
+        "norm_report": run_dir / "norm_report.txt",
+        "flaw_report": run_dir / "flaw_report.txt",
+        "tokenize_report": run_dir / "tokenize_report.txt",
+        "preprocess_config": run_dir / "preprocess_config.json",
+    }
+    if paths:
+        for key, value in paths.items():
+            if key in effective_paths:
+                effective_paths[key] = Path(value)
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    parameters = {
+        "schema_version": "1",
+        "created_at_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "datapreprocessor_git_commit": _current_git_commit_short(),
+        "datapreprocessor_git_status": _current_git_status(),
+        "dataset_schema_version": "1",
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "paths": {key: str(value) for key, value in effective_paths.items()},
+        "download_cfg": effective_download_cfg,
+        "norm_cfg": effective_norm_cfg,
+        "filter_cfg": effective_filter_cfg,
+        "tokenize_cfg": effective_tokenize_cfg,
+        "map_cfg": effective_map_cfg,
+    }
+    with effective_paths["preprocess_config"].open("w", encoding="utf-8") as f:
+        json.dump(parameters, f, ensure_ascii=False, indent=2)
+    print(f"Wrote {effective_paths['preprocess_config']}")
 
     download(
         dataset=dataset,
