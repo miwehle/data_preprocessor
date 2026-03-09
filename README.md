@@ -30,3 +30,13 @@ Aktuell sind diese Staerken als Keime angelegt. Ziel ist, sie in voller Praxisti
 - Standardisierte Report-Formate (JSONL) als robuste Basis fuer Visualisierung.
 - Weitere Visualisierungen fuer Stage-Zwischenstaende: schnelle grafische Grobuebersicht plus Detail-Drilldown in JSONL.
 - Klarer Zielzustand: deklarative, nachvollziehbare, idempotente Datenpipeline vom Rohdatensatz bis zum trainingsfertigen Output.
+
+## Voraussetzungen
+- Python 3.13 (oder kompatibel)
+- `datasets`
+- `transformers`
+- `sentencepiece`
+- `sacremoses` (wichtig bei Marian/OPUS-MT-Tokenizern wie `Helsinki-NLP/opus-mt-de-en`)
+
+Beispiel:
+`python -m pip install datasets transformers sentencepiece sacremoses`

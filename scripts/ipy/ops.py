@@ -13,13 +13,15 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from transformers import AutoTokenizer
-
 from datapreprocessor.filter import FlawReport, filter_examples, keep
 from datapreprocessor.load import download_records
 from datapreprocessor.map import to_training_schema
 from datapreprocessor.norm import NormReport, norm_examples
-from datapreprocessor.tokenizer import TokenizeReport, tokenize_examples
+from datapreprocessor.tokenizer import (
+    TokenizeReport,
+    create_hf_tokenizer,
+    tokenize_examples,
+)
 
 from .io import dataset_path, load, save
 
@@ -117,7 +119,7 @@ def tokenize(
     tokenizer_kwargs: dict | None = None,
     tokenize_debug: bool = False,
 ) -> None:
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_model_name)
+    tokenizer = create_hf_tokenizer(tokenizer_model_name)
 
     effective_kwargs = {"truncation": True, "max_length": 256, **(tokenizer_kwargs or {})}
 
