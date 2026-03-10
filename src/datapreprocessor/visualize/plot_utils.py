@@ -160,13 +160,28 @@ def attach_adaptive_value_labels(fig, bars, annotations) -> None:
 
 
 def set_coord_display(ax) -> None:
-    def _fmt(v: float) -> str:
-        s = f"{v:.2f}"
-        if "." in s:
-            s = s.rstrip("0").rstrip(".")
-        return s
+    manager = getattr(ax.figure.canvas, "manager", None)
+    toolbar = getattr(manager, "toolbar", None)
+    if toolbar is not None:
+        message_label = getattr(toolbar, "_message_label", None)
+        if message_label is not None:
+            try:
+                import tkinter.font as tkfont
 
-    ax.format_coord = lambda x, y: f"(x, y) = ({_fmt(x)}, {_fmt(y)})"
+                message_label.configure(font=tkfont.nametofont("TkFixedFont"))
+            except Exception:
+                pass
+
+    def _width(bounds: tuple[float, float]) -> int:
+        lo, hi = bounds
+        return max(len(f"{lo:.2f}"), len(f"{hi:.2f}"))
+
+    def _fmt(v: float, width: int) -> str:
+        return f"{v:>{width}.2f}"
+
+    ax.format_coord = lambda x, y: (
+        f"{_fmt(x, _width(ax.get_xlim()))} {_fmt(y, _width(ax.get_ylim()))}"
+    )
 
 
 def attach_toolbar_hint(fig, text: str):
@@ -180,12 +195,7 @@ def attach_toolbar_hint(fig, text: str):
     except ImportError:
         return None
 
-    label = tk.Label(
-        master=toolbar,
-        text=text,
-        font=getattr(toolbar, "_label_font", None),
-        padx=8,
-    )
+    label = tk.Label(master=toolbar, text=text, font=getattr(toolbar, "_label_font", None), padx=8)
     label.pack(side=tk.LEFT)
     toolbar._codex_hint_label = label
     return label
