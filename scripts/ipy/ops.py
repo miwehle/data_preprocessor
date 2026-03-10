@@ -10,7 +10,7 @@ import json
 import re
 import subprocess
 from collections.abc import Callable, Iterable
-from contextlib import ExitStack, closing, nullcontext
+from contextlib import closing, nullcontext
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
@@ -79,6 +79,42 @@ def _current_git_status() -> str:
         return "no local changes" if out.strip() == "" else "local changes exist"
     except Exception:
         return "local changes exist"
+
+
+def _default_paths(
+    *,
+    run_dir: Path,
+    dataset_name: str,
+    write_jsonl: bool,
+) -> dict[str, Path]:
+    if write_jsonl:
+        stage_root = run_dir
+        raw_output = stage_root / f"{dataset_name}.raw.jsonl"
+        norm_output = stage_root / f"{dataset_name}.norm.jsonl"
+        filter_output = stage_root / f"{dataset_name}.filtered.jsonl"
+        tokenize_output = stage_root / f"{dataset_name}.tokenized.jsonl"
+        map_output = stage_root / f"{dataset_name}.mapped.jsonl"
+    else:
+        # Keep intermediate outputs out of the run root when JSONL outputs are disabled.
+        stage_root = run_dir / ".stages"
+        raw_output = stage_root / f"{dataset_name}.raw"
+        norm_output = stage_root / f"{dataset_name}.norm"
+        filter_output = stage_root / f"{dataset_name}.filtered"
+        tokenize_output = stage_root / f"{dataset_name}.tokenized"
+        map_output = stage_root / f"{dataset_name}.mapped"
+
+    return {
+        "raw_output": raw_output,
+        "norm_output": norm_output,
+        "filter_output": filter_output,
+        "tokenize_output": tokenize_output,
+        "map_output": map_output,
+        "preprocessed_output": run_dir / f"{dataset_name}.preprocessed",
+        "norm_report": run_dir / "norm_report.txt",
+        "flaw_report": run_dir / "flaw_report.txt",
+        "tokenize_report": run_dir / "tokenize_report.txt",
+        "preprocess_config": run_dir / "preprocess_config.json",
+    }
 
 
 def _run_with_optional_report(
@@ -251,18 +287,11 @@ def preprocess(
         run_dir_name = f"{run_dir_name}_{max_records}"
 
     run_dir = _next_available_run_dir(Path.cwd() / run_dir_name)
-    effective_paths: dict[str, Path] = {
-        "raw_output": run_dir / f"{dataset_name}.raw.jsonl",
-        "norm_output": run_dir / f"{dataset_name}.norm.jsonl",
-        "filter_output": run_dir / f"{dataset_name}.filtered.jsonl",
-        "tokenize_output": run_dir / f"{dataset_name}.tokenized.jsonl",
-        "map_output": run_dir / f"{dataset_name}.mapped.jsonl",
-        "preprocessed_output": run_dir / f"{dataset_name}.preprocessed",
-        "norm_report": run_dir / "norm_report.txt",
-        "flaw_report": run_dir / "flaw_report.txt",
-        "tokenize_report": run_dir / "tokenize_report.txt",
-        "preprocess_config": run_dir / "preprocess_config.json",
-    }
+    effective_paths = _default_paths(
+        run_dir=run_dir,
+        dataset_name=dataset_name,
+        write_jsonl=write_jsonl,
+    )
     if paths:
         for key, value in paths.items():
             if key in effective_paths:
@@ -291,113 +320,66 @@ def preprocess(
         json.dump(parameters, f, ensure_ascii=False, indent=2)
     print(f"Wrote {effective_paths['preprocess_config']}")
 
-    if write_jsonl:
-        download(
-            dataset=dataset,
-            config=config,
-            split=split,
-            output=effective_paths["raw_output"],
-            max_records=effective_download_cfg["max_records"],
-            include_ids=effective_download_cfg["include_ids"],
-            id_field=effective_download_cfg["id_field"],
-            start_id=effective_download_cfg["start_id"],
-            overwrite_ids=effective_download_cfg["overwrite_ids"],
-        )
-        norm(
-            input_path=effective_paths["raw_output"],
-            output_path=effective_paths["norm_output"],
-            norm_report_path=effective_paths["norm_report"],
-            norm_debug=effective_norm_cfg["norm_debug"],
-        )
-        filter(
-            input_path=effective_paths["norm_output"],
-            output_path=effective_paths["filter_output"],
-            flaw_report_path=effective_paths["flaw_report"],
-            **effective_filter_cfg,
-        )
-        tokenize(
-            input_path=effective_paths["filter_output"],
-            output_path=effective_paths["tokenize_output"],
-            tokenize_report_path=effective_paths["tokenize_report"],
-            tokenizer_model_name=effective_tokenize_cfg["tokenizer_model_name"],
-            tokenizer_kwargs=effective_tokenize_cfg["tokenizer_kwargs"],
-            tokenize_debug=effective_tokenize_cfg["tokenize_debug"],
-        )
-        map(
-            input_path=effective_paths["tokenize_output"],
-            output_path=effective_paths["map_output"],
-            id_key=effective_map_cfg["id_key"],
-            tokenized_key=effective_map_cfg["tokenized_key"],
-            src_lang=effective_map_cfg["src_lang"],
-            tgt_lang=effective_map_cfg["tgt_lang"],
-            include_text=effective_map_cfg["include_text"],
-        )
-        mapped = load(effective_paths["map_output"])
-    else:
-        with ExitStack() as stack:
-            norm_report = stack.enter_context(
-                closing(
-                    NormReport.from_path(
-                        effective_paths["norm_report"],
-                        debug=effective_norm_cfg["norm_debug"],
-                    )
-                )
-            )
-            flaw_report = stack.enter_context(
-                closing(FlawReport.from_path(effective_paths["flaw_report"]))
-            )
-            tokenize_report = stack.enter_context(
-                closing(
-                    TokenizeReport.from_path(
-                        effective_paths["tokenize_report"],
-                        debug=effective_tokenize_cfg["tokenize_debug"],
-                    )
-                )
-            )
+    stages: list[tuple[Callable[..., None], dict[str, Any]]] = [
+        (
+            download,
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "output": effective_paths["raw_output"],
+                "max_records": effective_download_cfg["max_records"],
+                "include_ids": effective_download_cfg["include_ids"],
+                "id_field": effective_download_cfg["id_field"],
+                "start_id": effective_download_cfg["start_id"],
+                "overwrite_ids": effective_download_cfg["overwrite_ids"],
+            },
+        ),
+        (
+            norm,
+            {
+                "input_path": effective_paths["raw_output"],
+                "output_path": effective_paths["norm_output"],
+                "norm_report_path": effective_paths["norm_report"],
+                "norm_debug": effective_norm_cfg["norm_debug"],
+            },
+        ),
+        (
+            filter,
+            {
+                "input_path": effective_paths["norm_output"],
+                "output_path": effective_paths["filter_output"],
+                "flaw_report_path": effective_paths["flaw_report"],
+                **effective_filter_cfg,
+            },
+        ),
+        (
+            tokenize,
+            {
+                "input_path": effective_paths["filter_output"],
+                "output_path": effective_paths["tokenize_output"],
+                "tokenize_report_path": effective_paths["tokenize_report"],
+                "tokenizer_model_name": effective_tokenize_cfg["tokenizer_model_name"],
+                "tokenizer_kwargs": effective_tokenize_cfg["tokenizer_kwargs"],
+                "tokenize_debug": effective_tokenize_cfg["tokenize_debug"],
+            },
+        ),
+        (
+            map,
+            {
+                "input_path": effective_paths["tokenize_output"],
+                "output_path": effective_paths["map_output"],
+                "id_key": effective_map_cfg["id_key"],
+                "tokenized_key": effective_map_cfg["tokenized_key"],
+                "src_lang": effective_map_cfg["src_lang"],
+                "tgt_lang": effective_map_cfg["tgt_lang"],
+                "include_text": effective_map_cfg["include_text"],
+            },
+        ),
+    ]
+    for stage_fn, stage_kwargs in stages:
+        stage_fn(**stage_kwargs)
 
-            tokenizer = create_hf_tokenizer(
-                effective_tokenize_cfg["tokenizer_model_name"]
-            )
-            tokenizer_kwargs = {
-                "truncation": True,
-                "max_length": 256,
-                **(effective_tokenize_cfg["tokenizer_kwargs"] or {}),
-            }
-
-            downloaded = download_records(
-                dataset=dataset,
-                config=config,
-                split=split,
-                max_records=effective_download_cfg["max_records"],
-                include_ids=effective_download_cfg["include_ids"],
-                id_field=effective_download_cfg["id_field"],
-                start_id=effective_download_cfg["start_id"],
-                overwrite_ids=effective_download_cfg["overwrite_ids"],
-            )
-            normalized = norm_examples(
-                downloaded,
-                norm_reporter=norm_report,
-            )
-            filtered = filter_examples(
-                normalized,
-                partial(keep, flaw_reporter=flaw_report),
-            )
-            tokenized = tokenize_examples(
-                filtered,
-                tokenizer=tokenizer,
-                tokenize_reporter=tokenize_report,
-                tokenizer_kwargs=tokenizer_kwargs,
-            )
-            mapped = to_training_schema(
-                tokenized,
-                id_key=effective_map_cfg["id_key"],
-                tokenized_key=effective_map_cfg["tokenized_key"],
-                src_lang=effective_map_cfg["src_lang"],
-                tgt_lang=effective_map_cfg["tgt_lang"],
-                include_text=effective_map_cfg["include_text"],
-            )
-
-            mapped = list(mapped)
-
+    mapped = load(effective_paths["map_output"])
     save(mapped, effective_paths["preprocessed_output"])
     print(f"Wrote {effective_paths['preprocessed_output']}")
