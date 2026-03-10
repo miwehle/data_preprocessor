@@ -65,14 +65,14 @@ def format_wrapped_label(label: str, width: int = 22) -> str:
     return wrapped_default
 
 
-def _needs_diagonal_xtick_labels(ax, renderer) -> bool:
+def _max_xtick_label_width_ratio(ax, renderer) -> float:
     labels = [label for label in ax.get_xticklabels() if label.get_text()]
     if len(labels) <= 1:
-        return False
+        return 0.0
 
     axis_width_px = ax.get_window_extent(renderer=renderer).width
     if axis_width_px <= 0:
-        return False
+        return 0.0
 
     slot_width_px = axis_width_px / len(labels)
     max_label_width_px = 0.0
@@ -80,7 +80,7 @@ def _needs_diagonal_xtick_labels(ax, renderer) -> bool:
         width_px = label.get_window_extent(renderer=renderer).width
         max_label_width_px = max(max_label_width_px, width_px)
 
-    return max_label_width_px > slot_width_px * 0.95
+    return max_label_width_px / slot_width_px
 
 
 def _set_xtick_label_orientation(ax, diagonal: bool) -> None:
@@ -92,11 +92,20 @@ def _set_xtick_label_orientation(ax, diagonal: bool) -> None:
 
 
 def attach_adaptive_xtick_labels(fig, ax) -> None:
+    # Hysteresis to avoid oscillation in transition widths.
+    enter_diagonal_ratio = 0.95
+    exit_diagonal_ratio = 0.80
     state = {"diagonal": None}
 
     def _update(_event=None):
         renderer = fig.canvas.get_renderer()
-        diagonal = _needs_diagonal_xtick_labels(ax, renderer)
+        ratio = _max_xtick_label_width_ratio(ax, renderer)
+        if state["diagonal"] is None:
+            diagonal = ratio > enter_diagonal_ratio
+        elif state["diagonal"]:
+            diagonal = ratio > exit_diagonal_ratio
+        else:
+            diagonal = ratio > enter_diagonal_ratio
         if diagonal != state["diagonal"]:
             _set_xtick_label_orientation(ax, diagonal)
             state["diagonal"] = diagonal
