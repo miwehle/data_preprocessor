@@ -261,6 +261,10 @@ def preprocess(
 ) -> None:
     """Run the full preprocessing pipeline and produce translation-training output.
 
+    If the configured tokenizer does not define a target BOS token (for example
+    Marian/OPUS-MT), preprocessing materializes one for the mapped training
+    output.
+
     This does not yet create batched tensors. A later collation step (usually in
     the training data loader) still pads src/tgt sequences to the batch-local max
     length, stacks them into tensors, and returns the batch IDs alongside them.

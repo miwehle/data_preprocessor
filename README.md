@@ -16,6 +16,9 @@ Kleine, klare Pipeline zur Aufbereitung von de-en Beispielen fuer Seq2Seq-Traini
 - Regeln sind klar ausgelagert (`norm/changes.py`, `filter/predicates/*`): praezise, kompakt und leicht anpassbar/erweiterbar.
 - Zwischenergebnisse sind pro Stage als JSONL leicht inspizierbar: grober Check schnell, Details jederzeit nachvollziehbar.
 - Visualisierung kann direkt auf Reports aufbauen (bereits begonnen) und schrittweise wachsen, ohne den Pipeline-Kern umzubauen.
+- Fuer Translation-Training materialisiert die Pipeline einen expliziten Ziel-BOS-Token, falls der verwendete Tokenizer
+  keinen liefert (z. B. Marian/OPUS-MT). Das vermeidet eine schwer erkennbare Inkompatibilitaet zwischen Tokenizer-Ausgabe
+  und Seq2Seq-Training.
 
 ## Gold, Silber, Bronze (Zielbild)
 Aktuell sind diese Staerken als Keime angelegt. Ziel ist, sie in voller Praxistiefe auszubauen:
