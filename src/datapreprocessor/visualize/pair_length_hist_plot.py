@@ -97,7 +97,7 @@ def plot_pair_length_histogram(
         linewidth=0.25,
         label="en",
     )
-    ax.set_title("Histogram of Pair Lengths (de/en) - press 'x' or 'y' to toggle scaling")
+    ax.set_title("Histogram of Pair Lengths (de/en)")
     ax.set_xlabel("Text length (characters)")
     ax.set_ylabel("Count")
     ax.legend()
@@ -107,6 +107,7 @@ def plot_pair_length_histogram(
     if interactive_scale_toggle:
         pu.attach_x_scale_toggle(fig, ax, key="x")
         pu.attach_y_scale_toggle(fig, ax, key="y")
+        pu.attach_toolbar_hint(fig, "Press 'x' or 'y' to toggle scaling")
     pu.set_coord_display(ax)
     fig.tight_layout()
 

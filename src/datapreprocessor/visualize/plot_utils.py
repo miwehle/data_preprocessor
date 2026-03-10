@@ -169,6 +169,28 @@ def set_coord_display(ax) -> None:
     ax.format_coord = lambda x, y: f"(x, y) = ({_fmt(x)}, {_fmt(y)})"
 
 
+def attach_toolbar_hint(fig, text: str):
+    manager = getattr(fig.canvas, "manager", None)
+    toolbar = getattr(manager, "toolbar", None)
+    if toolbar is None or hasattr(toolbar, "_codex_hint_label"):
+        return None
+
+    try:
+        import tkinter as tk
+    except ImportError:
+        return None
+
+    label = tk.Label(
+        master=toolbar,
+        text=text,
+        font=getattr(toolbar, "_label_font", None),
+        padx=8,
+    )
+    label.pack(side=tk.LEFT)
+    toolbar._codex_hint_label = label
+    return label
+
+
 def integer_histogram_bins(*value_series, max_bins: int = 60) -> list[float]:
     values = [int(v) for series in value_series for v in series]
     if not values:
