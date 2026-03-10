@@ -6,7 +6,7 @@ from typing import Any, Dict, Mapping, Protocol, TextIO
 from ..types import Example
 
 
-class TokenizerLike(Protocol):
+class Tokenizer(Protocol):
     def __call__(self, text: str, **kwargs: Any) -> Mapping[str, Any]: ...
 
 
@@ -52,7 +52,7 @@ def _token_len(tokenized: Mapping[str, Any]) -> int:
 
 def tokenize_example(
     ex: Example,
-    tokenizer: TokenizerLike,
+    tokenizer: Tokenizer,
     tokenize_reporter: TokenizeReporter | None = None,
     *,
     translation_key: str = "translation",

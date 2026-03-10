@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Iterator
 
-from .tokenize_example import Example, TokenizeReporter, TokenizerLike, tokenize_example
+from .tokenize_example import Example, TokenizeReporter, Tokenizer, tokenize_example
 
 
-def create_hf_tokenizer(model_name: str) -> TokenizerLike:
+def create_hf_tokenizer(model_name: str) -> Tokenizer:
     if "opus-mt-" in model_name.lower():
         try:
             import sacremoses  # noqa: F401
@@ -48,7 +48,7 @@ def resolve_training_token_ids(tokenizer: Any) -> dict[str, int]:
 
 def tokenize_examples(
     ds: Iterable[Example],
-    tokenizer: TokenizerLike,
+    tokenizer: Tokenizer,
     tokenize_reporter: TokenizeReporter | None = None,
     **tokenize_example_kwargs,
 ) -> Iterator[Example]:
