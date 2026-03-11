@@ -6,7 +6,7 @@ from datapreprocessor.norm import NormReport, norm_examples
 
 
 def test_norm_report_matches_expected():
-    root_dir = Path(__file__).resolve().parents[2]
+    root_dir = Path(__file__).resolve().parents[3]
     data_file = root_dir / "tests" / "data" / "testdata_de_en_1000.jsonl"
     report = NormReport.from_path(root_dir / "norm_report.txt")
     ds = load_dataset("json", data_files=str(data_file), split="train")

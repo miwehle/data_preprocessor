@@ -1,7 +1,7 @@
-"""Thin IPython-facing orchestration layer.
+"""Thin public orchestration layer.
 
-This module coordinates I/O and delegates transformation logic to
-`src/datapreprocessor/*`. Keep business logic out of this file.
+This module coordinates I/O and delegates transformation logic to the
+specialized `datapreprocessor.*` modules. Keep business logic out of this file.
 """
 
 from __future__ import annotations

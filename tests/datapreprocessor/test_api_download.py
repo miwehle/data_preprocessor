@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from uuid import uuid4
 
 from datasets import Dataset
+from datapreprocessor import api as ops
 import datapreprocessor.load.download as load_module
-
-sys.path.append(str(Path(__file__).resolve().parents[2] / "scripts"))
-from ipy import ops
 
 
 def _read_jsonl(path):

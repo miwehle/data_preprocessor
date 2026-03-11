@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from uuid import uuid4
 
-sys.path.append(str(Path(__file__).resolve().parents[2] / "scripts"))
-from ipy import ops
+from datapreprocessor import api as ops
 
 
 def _run_dir() -> Path:
