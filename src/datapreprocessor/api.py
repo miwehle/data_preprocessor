@@ -290,9 +290,8 @@ def preprocess(
         "tokenize_debug": False,
         **(tokenize_cfg or {}),
     }
-    training_token_ids = resolve_training_token_ids(
-        create_hf_tokenizer(effective_tokenize_cfg["tokenizer_model_name"])
-    )
+    tokenizer = create_hf_tokenizer(effective_tokenize_cfg["tokenizer_model_name"])
+    training_token_ids = resolve_training_token_ids(tokenizer)
     effective_map_cfg = {
         "id_key": effective_download_cfg["id_field"],
         "tokenized_key": "tokenized_translation",
@@ -340,18 +339,6 @@ def preprocess(
     with effective_paths["preprocess_config"].open("w", encoding="utf-8") as f:
         json.dump(parameters, f, ensure_ascii=False, indent=2)
     print(f"Wrote {effective_paths['preprocess_config']}")
-
-    dataset_meta = build_dataset_meta(
-        tokenizer_model_name=effective_tokenize_cfg["tokenizer_model_name"],
-        src_lang=effective_map_cfg["src_lang"],
-        tgt_lang=effective_map_cfg["tgt_lang"],
-        id_field=effective_map_cfg["id_key"],
-        tgt_bos_id=training_token_ids["tgt_bos_id"],
-        tgt_eos_id=training_token_ids["tgt_eos_id"],
-    )
-    with effective_paths["dataset_meta"].open("w", encoding="utf-8") as f:
-        json.dump(dataset_meta, f, ensure_ascii=False, indent=2)
-    print(f"Wrote {effective_paths['dataset_meta']}")
 
     stages: list[tuple[Callable[..., None], dict[str, Any]]] = [
         (
@@ -416,5 +403,35 @@ def preprocess(
         stage_fn(**stage_kwargs)
 
     mapped = load(effective_paths["map_output"])
+    tokenizer_vocab_size = getattr(tokenizer, "vocab_size", None)
+    if tokenizer_vocab_size is None:
+        raise ValueError("Tokenizer must define vocab_size for dataset metadata.")
+    base_vocab_size = int(tokenizer_vocab_size)
+    src_vocab_size = max(base_vocab_size, training_token_ids["src_pad_id"] + 1)
+    tgt_vocab_size = max(
+        base_vocab_size,
+        training_token_ids["tgt_pad_id"] + 1,
+        training_token_ids["tgt_bos_id"] + 1,
+        training_token_ids["tgt_eos_id"] + 1,
+    )
+    dataset_meta = build_dataset_meta(
+        tokenizer_model_name=effective_tokenize_cfg["tokenizer_model_name"],
+        src_lang=effective_map_cfg["src_lang"],
+        tgt_lang=effective_map_cfg["tgt_lang"],
+        id_field=effective_map_cfg["id_key"],
+        src_field="src_ids",
+        tgt_field="tgt_ids",
+        base_vocab_size=base_vocab_size,
+        src_vocab_size=src_vocab_size,
+        tgt_vocab_size=tgt_vocab_size,
+        src_pad_id=training_token_ids["src_pad_id"],
+        tgt_pad_id=training_token_ids["tgt_pad_id"],
+        tgt_bos_id=training_token_ids["tgt_bos_id"],
+        tgt_eos_id=training_token_ids["tgt_eos_id"],
+        num_examples=len(mapped),
+    )
+    with effective_paths["dataset_meta"].open("w", encoding="utf-8") as f:
+        json.dump(dataset_meta, f, ensure_ascii=False, indent=2)
+    print(f"Wrote {effective_paths['dataset_meta']}")
     save(mapped, effective_paths["preprocessed_output"])
     print(f"Wrote {effective_paths['preprocessed_output']}")

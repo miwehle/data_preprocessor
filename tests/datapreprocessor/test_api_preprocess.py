@@ -38,7 +38,10 @@ def _patch_stage_spies(monkeypatch, calls: list[tuple[str, dict]]) -> None:
 
 
 def _patch_training_token_ids(monkeypatch) -> None:
-    monkeypatch.setattr(ops, "create_hf_tokenizer", lambda model_name: object())
+    class FakeTokenizer:
+        vocab_size = 58102
+
+    monkeypatch.setattr(ops, "create_hf_tokenizer", lambda model_name: FakeTokenizer())
     monkeypatch.setattr(
         ops,
         "resolve_training_token_ids",
@@ -127,7 +130,8 @@ def test_ops_preprocess_writes_dataset_meta(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    _patch_common_io(monkeypatch, capture_save=False, calls=[])
+    monkeypatch.setattr(ops, "load", lambda path: [{"id": 1}, {"id": 2}, {"id": 3}])
+    monkeypatch.setattr(ops, "save", lambda examples, output_path: None)
     _patch_stage_spies(monkeypatch, [])
     _patch_training_token_ids(monkeypatch)
 
@@ -145,6 +149,12 @@ def test_ops_preprocess_writes_dataset_meta(monkeypatch):
         "id_field": "id",
         "src_field": "src_ids",
         "tgt_field": "tgt_ids",
+        "base_vocab_size": 58102,
+        "src_vocab_size": 58102,
+        "tgt_vocab_size": 58102,
+        "src_pad_id": 58100,
+        "tgt_pad_id": 58100,
         "tgt_bos_id": 58101,
         "tgt_eos_id": 0,
+        "num_examples": 3,
     }
