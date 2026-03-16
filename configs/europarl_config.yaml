@@ -1,0 +1,7 @@
+dataset: Helsinki-NLP/europarl
+config: de-en
+split: train
+write_jsonl: true
+
+download_cfg:
+  max_records: 1000

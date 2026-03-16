@@ -56,6 +56,10 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _artifacts_root() -> Path:
+    return _repo_root().parent / "artifacts" / "datasets"
+
+
 def _current_git_commit_short() -> str | None:
     try:
         out = subprocess.check_output(
@@ -83,22 +87,19 @@ def _current_git_status() -> str:
         return "local changes exist"
 
 
-def _default_paths(*, run_dir: Path, dataset_name: str, write_jsonl: bool) -> dict[str, Path]:
+def _default_paths(*, dataset_dir: Path, dataset_name: str, write_jsonl: bool) -> dict[str, Path]:
     if write_jsonl:
-        stage_root = run_dir
-        raw_output = stage_root / f"{dataset_name}.raw.jsonl"
-        norm_output = stage_root / f"{dataset_name}.norm.jsonl"
-        filter_output = stage_root / f"{dataset_name}.filtered.jsonl"
-        tokenize_output = stage_root / f"{dataset_name}.tokenized.jsonl"
-        map_output = stage_root / f"{dataset_name}.mapped.jsonl"
+        raw_output = dataset_dir / "raw" / f"{dataset_name}.raw.jsonl"
+        norm_output = dataset_dir / "interim" / f"{dataset_name}.norm.jsonl"
+        filter_output = dataset_dir / "interim" / f"{dataset_name}.filtered.jsonl"
+        tokenize_output = dataset_dir / "interim" / f"{dataset_name}.tokenized.jsonl"
+        map_output = dataset_dir / "interim" / f"{dataset_name}.mapped.jsonl"
     else:
-        # Keep intermediate outputs out of the run root when JSONL outputs are disabled.
-        stage_root = run_dir / ".stages"
-        raw_output = stage_root / f"{dataset_name}.raw"
-        norm_output = stage_root / f"{dataset_name}.norm"
-        filter_output = stage_root / f"{dataset_name}.filtered"
-        tokenize_output = stage_root / f"{dataset_name}.tokenized"
-        map_output = stage_root / f"{dataset_name}.mapped"
+        raw_output = dataset_dir / "raw" / f"{dataset_name}.raw"
+        norm_output = dataset_dir / "interim" / f"{dataset_name}.norm"
+        filter_output = dataset_dir / "interim" / f"{dataset_name}.filtered"
+        tokenize_output = dataset_dir / "interim" / f"{dataset_name}.tokenized"
+        map_output = dataset_dir / "interim" / f"{dataset_name}.mapped"
 
     return {
         "raw_output": raw_output,
@@ -106,12 +107,12 @@ def _default_paths(*, run_dir: Path, dataset_name: str, write_jsonl: bool) -> di
         "filter_output": filter_output,
         "tokenize_output": tokenize_output,
         "map_output": map_output,
-        "preprocessed_output": run_dir / f"{dataset_name}.preprocessed",
-        "norm_report": run_dir / "norm_report.txt",
-        "flaw_report": run_dir / "flaw_report.txt",
-        "tokenize_report": run_dir / "tokenize_report.txt",
-        "preprocess_config": run_dir / "preprocess_config.json",
-        "dataset_meta": run_dir / "dataset_meta.json",
+        "preprocessed_output": dataset_dir / "preprocessed" / f"{dataset_name}.preprocessed",
+        "norm_report": dataset_dir / "interim" / "norm_report.txt",
+        "flaw_report": dataset_dir / "interim" / "flaw_report.txt",
+        "tokenize_report": dataset_dir / "interim" / "tokenize_report.txt",
+        "preprocess_config": dataset_dir / "preprocessed" / "preprocess_config.json",
+        "dataset_meta": dataset_dir / "preprocessed" / "dataset_meta.json",
     }
 
 
@@ -303,21 +304,22 @@ def preprocess(
         **(map_cfg or {}),
     }
 
-    run_dir_name = f"{dataset_name}_{config}_{split}"
+    dataset_dir_name = dataset_name
     max_records = effective_download_cfg["max_records"]
     if max_records is not None:
-        run_dir_name = f"{run_dir_name}_{max_records}"
+        dataset_dir_name = f"{dataset_dir_name}_{max_records}"
 
-    run_dir = _next_available_run_dir(Path.cwd() / run_dir_name)
+    dataset_dir = _next_available_run_dir(_artifacts_root() / dataset_dir_name)
     effective_paths = _default_paths(
-        run_dir=run_dir, dataset_name=dataset_name, write_jsonl=write_jsonl
+        dataset_dir=dataset_dir, dataset_name=dataset_name, write_jsonl=write_jsonl
     )
     if paths:
         for key, value in paths.items():
             if key in effective_paths:
                 effective_paths[key] = Path(value)
 
-    run_dir.mkdir(parents=True, exist_ok=True)
+    for path in effective_paths.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
 
     parameters = {
         "schema_version": "1",

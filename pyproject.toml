@@ -6,3 +6,5 @@ skip-magic-trailing-comma = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+addopts = "--basetemp=.tmp/pytest"
+cache_dir = ".tmp/.pytest_cache"

@@ -15,4 +15,7 @@ tests/.test_artifacts/
 
 .VSCodeCounter/
 .hf_home/
+.pytest_cache/
+pytest-cache-files-*/
+.tmp/
 

@@ -56,10 +56,12 @@ def _patch_training_token_ids(monkeypatch) -> None:
 
 def test_ops_preprocess_calls_stages_in_order(monkeypatch):
     calls: list[tuple[str, dict]] = []
-    monkeypatch.chdir(_run_dir())
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
     _patch_common_io(monkeypatch, capture_save=True, calls=calls)
     _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
     ops.preprocess(
         download_cfg={"max_records": 123},
@@ -70,14 +72,19 @@ def test_ops_preprocess_calls_stages_in_order(monkeypatch):
     assert calls[0][1]["max_records"] == 123
     assert calls[0][1]["include_ids"] is True
     assert calls[-2][1]["include_text"] is True
+    assert calls[0][1]["output"] == (
+        run_dir / "artifacts" / "datasets" / "europarl_123" / "raw" / "europarl.raw.jsonl"
+    )
 
 
 def test_ops_preprocess_accepts_path_overrides(monkeypatch):
     calls: list[tuple[str, dict]] = []
-    monkeypatch.chdir(_run_dir())
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
     _patch_common_io(monkeypatch, capture_save=False, calls=calls)
     _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
     ops.preprocess(paths={"map_output": "C:/custom/final.jsonl"})
 
@@ -87,7 +94,8 @@ def test_ops_preprocess_accepts_path_overrides(monkeypatch):
 def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
     seen_raw_output_paths: list[Path] = []
     seen_map_output_paths: list[Path] = []
-    monkeypatch.chdir(_run_dir())
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
 
     def fake_download(**kwargs):
         seen_raw_output_paths.append(Path(kwargs["output"]))
@@ -97,6 +105,7 @@ def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
 
     _patch_common_io(monkeypatch, capture_save=False, calls=[])
     _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
     monkeypatch.setattr(ops, "download", fake_download)
     monkeypatch.setattr(ops, "norm", lambda **kwargs: None)
     monkeypatch.setattr(ops, "filter", lambda **kwargs: None)
@@ -109,15 +118,21 @@ def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
     assert seen_map_output_paths
     assert seen_raw_output_paths[0].name == "My-Data_Set_V1.raw.jsonl"
     assert seen_map_output_paths[0].name == "My-Data_Set_V1.mapped.jsonl"
+    assert seen_raw_output_paths[0].parent.name == "raw"
+    assert seen_raw_output_paths[0].parent.parent.name == "My-Data_Set_V1"
+    assert seen_raw_output_paths[0].parent.parent.parent.name == "datasets"
+    assert seen_map_output_paths[0].parent.name == "interim"
 
 
 def test_ops_preprocess_passes_training_token_ids_to_map(monkeypatch):
     calls: list[tuple[str, dict]] = []
-    monkeypatch.chdir(_run_dir())
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
 
     _patch_common_io(monkeypatch, capture_save=False, calls=calls)
     _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
     ops.preprocess()
 
@@ -134,10 +149,13 @@ def test_ops_preprocess_writes_dataset_meta(monkeypatch):
     monkeypatch.setattr(ops, "save", lambda examples, output_path: None)
     _patch_stage_spies(monkeypatch, [])
     _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
     ops.preprocess()
 
-    meta_path = run_dir / "europarl_de-en_train" / "dataset_meta.json"
+    meta_path = (
+        run_dir / "artifacts" / "datasets" / "europarl" / "preprocessed" / "dataset_meta.json"
+    )
     assert meta_path.is_file()
 
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -158,3 +176,18 @@ def test_ops_preprocess_writes_dataset_meta(monkeypatch):
         "tgt_eos_id": 0,
         "num_examples": 3,
     }
+
+
+def test_ops_preprocess_uses_incremented_dataset_dir(monkeypatch):
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
+    _patch_common_io(monkeypatch, capture_save=False, calls=[])
+    _patch_stage_spies(monkeypatch, [])
+    _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
+
+    (run_dir / "artifacts" / "datasets" / "europarl").mkdir(parents=True, exist_ok=True)
+
+    ops.preprocess()
+
+    assert (run_dir / "artifacts" / "datasets" / "europarl (1)" / "preprocessed").is_dir()
