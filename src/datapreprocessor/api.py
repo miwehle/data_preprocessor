@@ -6,7 +6,6 @@ specialized `datapreprocessor.*` modules. Keep business logic out of this file.
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 from collections.abc import Callable, Iterable
@@ -15,6 +14,8 @@ from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 from datapreprocessor.filter import FlawReport, filter_examples, keep
 from datapreprocessor.load import download_examples
@@ -111,8 +112,8 @@ def _default_paths(*, dataset_dir: Path, dataset_name: str, write_jsonl: bool) -
         "norm_report": dataset_dir / "interim" / "norm_report.txt",
         "flaw_report": dataset_dir / "interim" / "flaw_report.txt",
         "tokenize_report": dataset_dir / "interim" / "tokenize_report.txt",
-        "preprocess_config": dataset_dir / "preprocessed" / "preprocess_config.json",
-        "dataset_meta": dataset_dir / "preprocessed" / "dataset_meta.json",
+        "preprocess_config": dataset_dir / "preprocessed" / "preprocess_config.yaml",
+        "dataset_manifest": dataset_dir / "preprocessed" / "dataset_manifest.yaml",
     }
 
 
@@ -339,7 +340,7 @@ def preprocess(
         "map_cfg": effective_map_cfg,
     }
     with effective_paths["preprocess_config"].open("w", encoding="utf-8") as f:
-        json.dump(parameters, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(parameters, f, sort_keys=False, allow_unicode=True)
     print(f"Wrote {effective_paths['preprocess_config']}")
 
     stages: list[tuple[Callable[..., None], dict[str, Any]]] = [
@@ -416,7 +417,7 @@ def preprocess(
         training_token_ids["tgt_bos_id"] + 1,
         training_token_ids["tgt_eos_id"] + 1,
     )
-    dataset_meta = build_dataset_meta(
+    dataset_manifest = build_dataset_meta(
         tokenizer_model_name=effective_tokenize_cfg["tokenizer_model_name"],
         src_lang=effective_map_cfg["src_lang"],
         tgt_lang=effective_map_cfg["tgt_lang"],
@@ -432,8 +433,8 @@ def preprocess(
         tgt_eos_id=training_token_ids["tgt_eos_id"],
         num_examples=len(mapped),
     )
-    with effective_paths["dataset_meta"].open("w", encoding="utf-8") as f:
-        json.dump(dataset_meta, f, ensure_ascii=False, indent=2)
-    print(f"Wrote {effective_paths['dataset_meta']}")
+    with effective_paths["dataset_manifest"].open("w", encoding="utf-8") as f:
+        yaml.safe_dump(dataset_manifest, f, sort_keys=False, allow_unicode=True)
+    print(f"Wrote {effective_paths['dataset_manifest']}")
     save(mapped, effective_paths["preprocessed_output"])
     print(f"Wrote {effective_paths['preprocessed_output']}")

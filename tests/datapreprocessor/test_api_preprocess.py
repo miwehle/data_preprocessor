@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from uuid import uuid4
+
+import yaml
 
 from datapreprocessor import api as ops
 
@@ -141,7 +142,7 @@ def test_ops_preprocess_passes_training_token_ids_to_map(monkeypatch):
     assert map_call["tgt_eos_id"] == 0
 
 
-def test_ops_preprocess_writes_dataset_meta(monkeypatch):
+def test_ops_preprocess_writes_dataset_manifest(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
@@ -153,13 +154,13 @@ def test_ops_preprocess_writes_dataset_meta(monkeypatch):
 
     ops.preprocess()
 
-    meta_path = (
-        run_dir / "artifacts" / "datasets" / "europarl" / "preprocessed" / "dataset_meta.json"
+    manifest_path = (
+        run_dir / "artifacts" / "datasets" / "europarl" / "preprocessed" / "dataset_manifest.yaml"
     )
-    assert meta_path.is_file()
+    assert manifest_path.is_file()
 
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    assert meta == {
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    assert manifest == {
         "schema_version": 1,
         "tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en",
         "src_lang": "de",
