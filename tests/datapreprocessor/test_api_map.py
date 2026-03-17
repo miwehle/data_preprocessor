@@ -45,7 +45,7 @@ def test_ops_map_projects_to_training_schema_jsonl():
         ],
     )
 
-    ops.map(input_path=src, output_path=dst, include_text=True)
+    ops.map(input_path=src, output_path=dst, src_lang="de", tgt_lang="en", include_text=True)
 
     out = _read_jsonl(dst)
     assert out == [
@@ -77,7 +77,7 @@ def test_ops_map_can_write_target_bos_and_eos():
         ],
     )
 
-    ops.map(input_path=src, output_path=dst, tgt_bos_id=99, tgt_eos_id=0)
+    ops.map(input_path=src, output_path=dst, src_lang="de", tgt_lang="en", tgt_bos_id=99, tgt_eos_id=0)
 
     out = _read_jsonl(dst)
     assert out == [{"id": 1, "src_ids": [10, 0], "tgt_ids": [99, 20, 0]}]

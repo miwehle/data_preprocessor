@@ -65,13 +65,14 @@ def test_ops_preprocess_calls_stages_in_order(monkeypatch):
     monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
     ops.preprocess(
-        download_cfg={"max_records": 123},
-        map_cfg={"include_text": True},
+        download_cfg={"dataset": "Helsinki-NLP/europarl", "config": "de-en", "split": "train", "max_records": 123},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en", "include_text": True},
     )
 
     assert [name for name, _ in calls] == ["download", "norm", "filter", "tokenize", "map", "save"]
     assert calls[0][1]["max_records"] == 123
-    assert calls[0][1]["include_ids"] is True
+    assert "include_ids" not in calls[0][1]
     assert calls[-2][1]["include_text"] is True
     assert calls[0][1]["output"] == (
         run_dir / "artifacts" / "datasets" / "europarl_123" / "raw" / "europarl.raw.jsonl"
@@ -99,7 +100,11 @@ def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
     monkeypatch.setattr(ops, "tokenize", lambda **kwargs: None)
     monkeypatch.setattr(ops, "map", fake_map)
 
-    ops.preprocess(dataset="Org/My-Data Set+V1")
+    ops.preprocess(
+        download_cfg={"dataset": "Org/My-Data Set+V1", "config": "de-en", "split": "train"},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en"},
+    )
 
     assert seen_raw_output_paths
     assert seen_map_output_paths
@@ -121,7 +126,11 @@ def test_ops_preprocess_passes_training_token_ids_to_map(monkeypatch):
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
-    ops.preprocess()
+    ops.preprocess(
+        download_cfg={"dataset": "Helsinki-NLP/europarl", "config": "de-en", "split": "train"},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en"},
+    )
 
     map_call = next(kwargs for name, kwargs in calls if name == "map")
     assert map_call["tgt_bos_id"] == 58101
@@ -138,7 +147,11 @@ def test_ops_preprocess_writes_dataset_manifest(monkeypatch):
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
 
-    ops.preprocess()
+    ops.preprocess(
+        download_cfg={"dataset": "Helsinki-NLP/europarl", "config": "de-en", "split": "train"},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en"},
+    )
 
     manifest_path = (
         run_dir / "artifacts" / "datasets" / "europarl" / "preprocessed" / "dataset_manifest.yaml"
@@ -175,6 +188,10 @@ def test_ops_preprocess_uses_incremented_dataset_dir(monkeypatch):
 
     (run_dir / "artifacts" / "datasets" / "europarl").mkdir(parents=True, exist_ok=True)
 
-    ops.preprocess()
+    ops.preprocess(
+        download_cfg={"dataset": "Helsinki-NLP/europarl", "config": "de-en", "split": "train"},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en"},
+    )
 
     assert (run_dir / "artifacts" / "datasets" / "europarl (1)" / "preprocessed").is_dir()

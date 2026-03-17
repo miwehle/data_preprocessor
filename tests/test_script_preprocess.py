@@ -16,11 +16,14 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
     config_path.write_text(
         yaml.safe_dump(
             {
-                "dataset": "Helsinki-NLP/europarl",
-                "config": "de-en",
-                "split": "train",
                 "write_jsonl": False,
-                "map_cfg": {"include_text": True},
+                "download_cfg": {
+                    "dataset": "Helsinki-NLP/europarl",
+                    "config": "de-en",
+                    "split": "train",
+                },
+                "tokenize_cfg": {"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+                "map_cfg": {"src_lang": "de", "tgt_lang": "en", "include_text": True},
             }
         ),
         encoding="utf-8",
@@ -46,14 +49,15 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
     assert excinfo.value.code == 0
     assert calls == [
         {
-            "dataset": "Helsinki-NLP/europarl",
-            "config": "de-en",
-            "split": "train",
-            "download_cfg": None,
+            "download_cfg": {
+                "dataset": "Helsinki-NLP/europarl",
+                "config": "de-en",
+                "split": "train",
+            },
             "norm_cfg": None,
             "filter_cfg": None,
-            "tokenize_cfg": None,
-            "map_cfg": {"include_text": True},
+            "tokenize_cfg": {"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+            "map_cfg": {"src_lang": "de", "tgt_lang": "en", "include_text": True},
             "write_jsonl": False,
         }
     ]

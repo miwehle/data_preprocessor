@@ -202,7 +202,7 @@ def tokenize(
     input_path: str | Path,
     output_path: str | Path,
     tokenize_report_path: str | Path | None = "tokenize_report.txt",
-    tokenizer_model_name: str = "Helsinki-NLP/opus-mt-de-en",
+    tokenizer_model_name: str,
     tokenizer_kwargs: dict | None = None,
     tokenize_debug: bool = False,
 ) -> None:
@@ -228,8 +228,8 @@ def map(
     output_path: str | Path,
     id_key: str = "id",
     tokenized_key: str = "tokenized_translation",
-    src_lang: str = "de",
-    tgt_lang: str = "en",
+    src_lang: str,
+    tgt_lang: str,
     tgt_bos_id: int | None = None,
     tgt_eos_id: int | None = None,
     include_text: bool = False,
@@ -252,9 +252,6 @@ def map(
 
 def preprocess(
     *,
-    dataset: str = "Helsinki-NLP/europarl",
-    config: str = "de-en",
-    split: str = "train",
     download_cfg: dict[str, Any] | None = None,
     norm_cfg: dict[str, Any] | None = None,
     filter_cfg: dict[str, Any] | None = None,
@@ -264,6 +261,9 @@ def preprocess(
 ) -> None:
     """Run the full preprocessing pipeline and produce translation-training output.
 
+    The `*_cfg` dictionaries are passed through to the stage functions in this
+    module and must include those functions' required parameters.
+
     If the configured tokenizer does not define a target BOS token (for example
     Marian/OPUS-MT), preprocessing materializes one for the mapped training
     output.
@@ -272,40 +272,40 @@ def preprocess(
     the training data loader) still pads src/tgt sequences to the batch-local max
     length, stacks them into tensors, and returns the batch IDs alongside them.
     """
+    download_cfg = download_cfg or {}
+    norm_cfg = norm_cfg or {}
+    filter_cfg = filter_cfg or {}
+    tokenize_cfg = tokenize_cfg or {}
+    map_cfg = map_cfg or {}
 
-    dataset_name = _dataset_name_for_filesystem(dataset)
+    dataset_name = _dataset_name_for_filesystem(download_cfg["dataset"])
 
-    effective_download_cfg = {
+    resolved_download_cfg = {
         "max_records": None,
         "include_ids": True,
         "id_field": "id",
         "start_id": 0,
         "overwrite_ids": False,
-        **(download_cfg or {}),
+        **download_cfg,
     }
-    effective_norm_cfg = {"norm_debug": False, **(norm_cfg or {})}
-    effective_filter_cfg = {**(filter_cfg or {})}
-    effective_tokenize_cfg = {
-        "tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en",
+    resolved_tokenize_cfg = {
         "tokenizer_kwargs": None,
         "tokenize_debug": False,
-        **(tokenize_cfg or {}),
+        **tokenize_cfg,
     }
-    tokenizer = create_hf_tokenizer(effective_tokenize_cfg["tokenizer_model_name"])
+    tokenizer = create_hf_tokenizer(resolved_tokenize_cfg["tokenizer_model_name"])
     training_token_ids = resolve_training_token_ids(tokenizer)
-    effective_map_cfg = {
-        "id_key": effective_download_cfg["id_field"],
+    resolved_map_cfg = {
+        "id_key": resolved_download_cfg["id_field"],
         "tokenized_key": "tokenized_translation",
-        "src_lang": "de",
-        "tgt_lang": "en",
         "tgt_bos_id": training_token_ids["tgt_bos_id"],
         "tgt_eos_id": training_token_ids["tgt_eos_id"],
         "include_text": False,
-        **(map_cfg or {}),
+        **map_cfg,
     }
 
     dataset_dir_name = dataset_name
-    max_records = effective_download_cfg["max_records"]
+    max_records = resolved_download_cfg["max_records"]
     if max_records is not None:
         dataset_dir_name = f"{dataset_dir_name}_{max_records}"
 
@@ -321,16 +321,13 @@ def preprocess(
         "datapreprocessor_git_commit": _current_git_commit_short(),
         "datapreprocessor_git_status": _current_git_status(),
         "dataset_schema_version": "1",
-        "dataset": dataset,
-        "config": config,
-        "split": split,
         "write_jsonl": write_jsonl,
         "paths": {key: str(value) for key, value in paths.items()},
-        "download_cfg": effective_download_cfg,
-        "norm_cfg": effective_norm_cfg,
-        "filter_cfg": effective_filter_cfg,
-        "tokenize_cfg": effective_tokenize_cfg,
-        "map_cfg": effective_map_cfg,
+        "download_cfg": resolved_download_cfg,
+        "norm_cfg": norm_cfg,
+        "filter_cfg": filter_cfg,
+        "tokenize_cfg": resolved_tokenize_cfg,
+        "map_cfg": resolved_map_cfg,
     }
     with paths["preprocess_config"].open("w", encoding="utf-8") as f:
         yaml.safe_dump(parameters, f, sort_keys=False, allow_unicode=True)
@@ -340,15 +337,8 @@ def preprocess(
         (
             download,
             {
-                "dataset": dataset,
-                "config": config,
-                "split": split,
                 "output": paths["raw_output"],
-                "max_records": effective_download_cfg["max_records"],
-                "include_ids": effective_download_cfg["include_ids"],
-                "id_field": effective_download_cfg["id_field"],
-                "start_id": effective_download_cfg["start_id"],
-                "overwrite_ids": effective_download_cfg["overwrite_ids"],
+                **download_cfg,
             },
         ),
         (
@@ -357,7 +347,7 @@ def preprocess(
                 "input_path": paths["raw_output"],
                 "output_path": paths["norm_output"],
                 "norm_report_path": paths["norm_report"],
-                "norm_debug": effective_norm_cfg["norm_debug"],
+                **norm_cfg,
             },
         ),
         (
@@ -366,7 +356,7 @@ def preprocess(
                 "input_path": paths["norm_output"],
                 "output_path": paths["filter_output"],
                 "flaw_report_path": paths["flaw_report"],
-                **effective_filter_cfg,
+                **filter_cfg,
             },
         ),
         (
@@ -375,9 +365,7 @@ def preprocess(
                 "input_path": paths["filter_output"],
                 "output_path": paths["tokenize_output"],
                 "tokenize_report_path": paths["tokenize_report"],
-                "tokenizer_model_name": effective_tokenize_cfg["tokenizer_model_name"],
-                "tokenizer_kwargs": effective_tokenize_cfg["tokenizer_kwargs"],
-                "tokenize_debug": effective_tokenize_cfg["tokenize_debug"],
+                **tokenize_cfg,
             },
         ),
         (
@@ -385,13 +373,9 @@ def preprocess(
             {
                 "input_path": paths["tokenize_output"],
                 "output_path": paths["map_output"],
-                "id_key": effective_map_cfg["id_key"],
-                "tokenized_key": effective_map_cfg["tokenized_key"],
-                "src_lang": effective_map_cfg["src_lang"],
-                "tgt_lang": effective_map_cfg["tgt_lang"],
-                "tgt_bos_id": effective_map_cfg["tgt_bos_id"],
-                "tgt_eos_id": effective_map_cfg["tgt_eos_id"],
-                "include_text": effective_map_cfg["include_text"],
+                **map_cfg,
+                "tgt_bos_id": map_cfg.get("tgt_bos_id", training_token_ids["tgt_bos_id"]),
+                "tgt_eos_id": map_cfg.get("tgt_eos_id", training_token_ids["tgt_eos_id"]),
             },
         ),
     ]
@@ -411,10 +395,10 @@ def preprocess(
         training_token_ids["tgt_eos_id"] + 1,
     )
     dataset_manifest = build_dataset_meta(
-        tokenizer_model_name=effective_tokenize_cfg["tokenizer_model_name"],
-        src_lang=effective_map_cfg["src_lang"],
-        tgt_lang=effective_map_cfg["tgt_lang"],
-        id_field=effective_map_cfg["id_key"],
+        tokenizer_model_name=resolved_tokenize_cfg["tokenizer_model_name"],
+        src_lang=resolved_map_cfg["src_lang"],
+        tgt_lang=resolved_map_cfg["tgt_lang"],
+        id_field=resolved_map_cfg["id_key"],
         src_field="src_ids",
         tgt_field="tgt_ids",
         base_vocab_size=base_vocab_size,

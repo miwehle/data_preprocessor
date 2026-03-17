@@ -1,7 +1,14 @@
-dataset: Helsinki-NLP/europarl
-config: de-en
-split: train
 write_jsonl: true
 
 download_cfg:
+  dataset: Helsinki-NLP/europarl
+  config: de-en
+  split: train
   max_records: 1000
+
+tokenize_cfg:
+  tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
+
+map_cfg:
+  src_lang: de
+  tgt_lang: en

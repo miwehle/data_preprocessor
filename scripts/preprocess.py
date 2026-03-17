@@ -1,7 +1,7 @@
 """Run the dataset preprocessing pipeline from the command line.
 
-This script receives a YAML config file. The config file defines the dataset, config, and split.
-Nothing else needs to be specified; `preprocess` uses its default values.
+This script receives a YAML config file. The config file is passed through to
+`preprocess(...)` via its stage-specific `*_cfg` dictionaries.
 
 Example: `configs/europarl_config.yaml`
 Run it with: `python scripts/preprocess.py configs/europarl_config.yaml`
@@ -39,9 +39,6 @@ def main() -> int:
 
     try:
         preprocess(
-            dataset=cfg["dataset"],  # required
-            config=cfg["config"],
-            split=cfg["split"],
             write_jsonl=cfg.get("write_jsonl", True),
             **{key: cfg.get(key) for key in OPTIONAL_CFG_KEYS},
         )
