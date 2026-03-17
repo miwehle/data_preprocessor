@@ -65,10 +65,10 @@ def _artifacts_root() -> Path:
     return _repo_root().parent / "artifacts" / "datasets"
 
 
-def _current_git_commit_short() -> str | None:
+def _current_git_commit() -> str | None:
     try:
         out = subprocess.check_output(
-            ["git", "rev-parse", "--short=12", "HEAD"],
+            ["git", "rev-parse", "HEAD"],
             stderr=subprocess.DEVNULL,
             text=True,
             cwd=str(_repo_root()),
@@ -330,7 +330,7 @@ def preprocess(
     parameters = {
         "schema_version": "1",
         "created_at_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "data_preprocessor_git_commit": _current_git_commit_short(),
+        "data_preprocessor_git_commit": _current_git_commit(),
         "data_preprocessor_git_status": _current_git_status(),
         "dataset_schema_version": "1",
         "write_jsonl": write_jsonl,
