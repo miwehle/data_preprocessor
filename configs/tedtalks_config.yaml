@@ -1,0 +1,15 @@
+write_jsonl: true
+
+download_cfg:
+  dataset: IWSLT/iwslt2017
+  config: iwslt2017-de-en
+  split: train
+  source_format: hf_parquet
+  revision: b2dcd74c28e4544eb5c9bb76ace449ea26bbe909
+
+tokenize_cfg:
+  tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
+
+map_cfg:
+  src_lang: de
+  tgt_lang: en
