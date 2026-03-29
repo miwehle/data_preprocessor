@@ -87,3 +87,38 @@ def test_download_can_overwrite_existing_id(monkeypatch):
 
     rows = _read_jsonl(out)
     assert [row["id"] for row in rows] == [100, 101]
+
+
+def test_download_can_load_hf_parquet(monkeypatch):
+    ds = Dataset.from_list([{"translation": {"de": "eins", "en": "one"}}])
+    calls: list[tuple[tuple, dict]] = []
+
+    def fake_load_dataset(*args, **kwargs):
+        calls.append((args, kwargs))
+        return ds
+
+    monkeypatch.setattr(load_module, "load_dataset", fake_load_dataset)
+    out = _make_out_path()
+
+    ops.download(
+        dataset="IWSLT/iwslt2017",
+        config="iwslt2017-de-en",
+        split="train",
+        source_format="hf_parquet",
+        output=out,
+    )
+
+    rows = _read_jsonl(out)
+    assert rows == [{"translation": {"de": "eins", "en": "one"}, "id": 0}]
+    assert calls == [
+        (
+            ("parquet",),
+            {
+                "data_files": (
+                    "https://huggingface.co/datasets/IWSLT/iwslt2017/resolve/"
+                    "main/iwslt2017-de-en/iwslt2017-train.parquet"
+                ),
+                "split": "train",
+            },
+        )
+    ]

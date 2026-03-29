@@ -13,7 +13,7 @@ from contextlib import closing, nullcontext
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 
@@ -149,6 +149,9 @@ def download(
     dataset: str,
     config: str,
     split: str,
+    source_format: Literal["hf", "hf_parquet"] = "hf",
+    revision: str = "main",
+    parquet_basename: str | None = None,
     output: str | Path,
     max_examples: int | None = None,
     include_ids: bool = True,
@@ -156,11 +159,17 @@ def download(
     start_id: int = 0,
     overwrite_ids: bool = False,
 ) -> None:
-    """Download one dataset split and optionally assign stable example IDs."""
+    """Download one dataset split and optionally assign stable example IDs.
+
+    See the ``download_examples`` docstring for parameter details.
+    """
     examples = download_examples(
         dataset=dataset,
         config=config,
         split=split,
+        source_format=source_format,
+        revision=revision,
+        parquet_basename=parquet_basename,
         max_examples=max_examples,
         include_ids=include_ids,
         id_field=id_field,
