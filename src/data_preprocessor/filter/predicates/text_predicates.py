@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from functools import partial
 from typing import Iterable
 
 
@@ -174,16 +173,3 @@ def has_unbalanced_brackets(text: str) -> bool:
                 return True
 
     return len(stack) != 0
-
-TEXT_FLAWS = (
-    is_blank,
-    partial(is_too_short, min=10),
-    partial(is_too_long, max=300),
-    contains_url,
-    contains_email,
-    # contains_german_chars,
-    contains_control_chars,
-    contains_invisible_format_chars,
-    has_odd_number_of_quotes,
-    has_unbalanced_brackets,
-)

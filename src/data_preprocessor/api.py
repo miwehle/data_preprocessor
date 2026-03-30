@@ -18,8 +18,6 @@ from typing import Any, Literal
 import yaml
 
 from data_preprocessor.filter import FlawReport, filter_examples, keep, pair_predicates, predicates
-from data_preprocessor.filter.predicates.text_pair_predicates import TEXT_PAIR_FLAWS
-from data_preprocessor.filter.predicates.text_predicates import TEXT_FLAWS
 from data_preprocessor.load import download_examples
 from data_preprocessor.map import map_examples
 from data_preprocessor.metadata import build_dataset_meta
@@ -209,8 +207,8 @@ def filter(
 ) -> None:
     """Filter examples and optionally write a flaw report."""
     filter_cfg = filter_cfg or {}
-    ps = predicates(filter_cfg.get("predicates")) or TEXT_FLAWS
-    pps = pair_predicates(filter_cfg.get("pair_predicates")) or TEXT_PAIR_FLAWS
+    ps = predicates(filter_cfg.get("predicates")) or ()
+    pps = pair_predicates(filter_cfg.get("pair_predicates")) or ()
 
     _run_with_optional_report(
         input_path=input_path,

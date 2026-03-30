@@ -27,7 +27,7 @@ def _read_jsonl(path: Path) -> list[dict]:
     return out
 
 
-def test_ops_map_projects_to_training_schema_jsonl():
+def test_map_projects_to_training_schema_jsonl():
     root = _artifacts_dir()
     src = root / f"{uuid4().hex}.jsonl"
     dst = root / f"{uuid4().hex}.jsonl"
@@ -59,7 +59,7 @@ def test_ops_map_projects_to_training_schema_jsonl():
     ]
 
 
-def test_ops_map_can_write_target_bos_and_eos():
+def test_map_can_write_target_bos_and_eos():
     root = _artifacts_dir()
     src = root / f"{uuid4().hex}.jsonl"
     dst = root / f"{uuid4().hex}.jsonl"

@@ -15,7 +15,29 @@ def test_filter_with_keep():
     data_file = root_dir / "tests" / "data" / "testdata_de_en_1000.jsonl"
     report = FlawReport.from_path(root_dir / "flaw_report.txt")
     ds = load_dataset("json", data_files=str(data_file), split="train")
-    it = filter_examples(ds, partial(keep, flaw_reporter=report))
+    it = filter_examples(
+        ds,
+        partial(
+            keep,
+            flaw_reporter=report,
+            text_flaws=predicates(
+                [
+                    "is_blank",
+                    ["is_too_short", {"min": 10}],
+                    ["is_too_long", {"max": 300}],
+                    "contains_url",
+                    "contains_email",
+                    "contains_control_chars",
+                    "contains_invisible_format_chars",
+                    "has_odd_number_of_quotes",
+                    "has_unbalanced_brackets",
+                ]
+            ),
+            pair_flaws=pair_predicates(
+                [["bad_length_ratio", {"min": 0.33, "max": 3}], "are_equal"]
+            ),
+        ),
+    )
 
     try:
         for ex in it:

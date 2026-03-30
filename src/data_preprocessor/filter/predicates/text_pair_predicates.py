@@ -1,6 +1,5 @@
 from __future__ import annotations
 import builtins
-from functools import partial
 
 
 def bad_length_ratio(de: str, en: str, min, max) -> bool:
@@ -14,5 +13,3 @@ def bad_length_ratio(de: str, en: str, min, max) -> bool:
 
 def are_equal(de, en):
     return de.lower() == en.lower()
-
-TEXT_PAIR_FLAWS = (partial(bad_length_ratio, min=0.33, max=3), are_equal)

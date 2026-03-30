@@ -3,8 +3,6 @@ from pathlib import Path
 from typing import Protocol, TextIO
 
 from .filter import Example
-from .predicates.text_pair_predicates import TEXT_PAIR_FLAWS
-from .predicates.text_predicates import TEXT_FLAWS
 
 
 def find_flaws(flaws, *args):
@@ -54,8 +52,8 @@ class FlawReport:
 
 def keep(
     ex: Example,
-    text_flaws=TEXT_FLAWS,
-    pair_flaws=TEXT_PAIR_FLAWS,
+    text_flaws=(),
+    pair_flaws=(),
     flaw_reporter: FlawReporter | None = None,
 ):
     """Return True for clean examples and optionally report flaw findings."""

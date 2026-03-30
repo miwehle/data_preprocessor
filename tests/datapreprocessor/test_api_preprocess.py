@@ -55,7 +55,7 @@ def _patch_training_token_ids(monkeypatch) -> None:
     )
 
 
-def test_ops_preprocess_calls_stages_in_order(monkeypatch):
+def test_preprocess_calls_stages_in_order(monkeypatch):
     calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
@@ -89,7 +89,7 @@ def test_ops_preprocess_calls_stages_in_order(monkeypatch):
     )
 
 
-def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
+def test_preprocess_derives_filesystem_dataset_name(monkeypatch):
     seen_raw_output_paths: list[Path] = []
     seen_map_output_paths: list[Path] = []
     run_dir = _run_dir()
@@ -125,7 +125,7 @@ def test_ops_preprocess_derives_filesystem_dataset_name(monkeypatch):
     assert seen_map_output_paths[0].parent.name == "My-Data_Set_V1_de-en_train_staging"
 
 
-def test_ops_preprocess_passes_training_token_ids_to_map(monkeypatch):
+def test_preprocess_passes_training_token_ids_to_map(monkeypatch):
     calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
@@ -149,7 +149,7 @@ def test_ops_preprocess_passes_training_token_ids_to_map(monkeypatch):
     assert map_call["tgt_eos_id"] == 0
 
 
-def test_ops_filter_uses_configured_predicates(monkeypatch):
+def test_filter_uses_configured_predicates(monkeypatch):
     seen = {}
 
     monkeypatch.setattr(ops, "load", lambda path: [{"translation": {"de": "x", "en": "y"}}])
@@ -178,7 +178,7 @@ def test_ops_filter_uses_configured_predicates(monkeypatch):
     assert [f.__name__ for f in seen["pair_flaws"]] == ["are_equal"]
 
 
-def test_ops_preprocess_writes_dataset_manifest(monkeypatch):
+def test_preprocess_writes_dataset_manifest(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
@@ -222,7 +222,7 @@ def test_ops_preprocess_writes_dataset_manifest(monkeypatch):
     }
 
 
-def test_ops_preprocess_uses_incremented_dataset_dir(monkeypatch):
+def test_preprocess_uses_incremented_dataset_dir(monkeypatch):
     calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
