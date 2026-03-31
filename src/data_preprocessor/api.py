@@ -361,7 +361,7 @@ def preprocess(
 
     for path in paths.values():
         path.parent.mkdir(parents=True, exist_ok=True)
-    configure_data_preprocessor_logging(log_path=paths["raw_output"].parent / "preprocessing.log")
+    configure_data_preprocessor_logging(log_path=paths["preprocessed_output"] / "preprocess.log")
 
     parameters = {
         "schema_version": "1",

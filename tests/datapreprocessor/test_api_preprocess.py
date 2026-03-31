@@ -257,7 +257,7 @@ def test_preprocess_uses_incremented_dataset_dir(monkeypatch):
     )
 
 
-def test_preprocess_logs_to_staging_preprocessing_log(monkeypatch):
+def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
@@ -281,9 +281,7 @@ def test_preprocess_logs_to_staging_preprocessing_log(monkeypatch):
         map_cfg={"src_lang": "de", "tgt_lang": "en"},
     )
 
-    log_path = (
-        run_dir / "artifacts" / "datasets" / "europarl_de-en_train_staging" / "preprocessing.log"
-    )
+    log_path = run_dir / "artifacts" / "datasets" / "europarl_de-en_train" / "preprocess.log"
     assert log_path.is_file()
     log_text = log_path.read_text(encoding="utf-8")
     assert "Start download" in log_text
