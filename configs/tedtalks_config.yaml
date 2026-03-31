@@ -31,7 +31,7 @@ filter_cfg:
 
 tokenize_cfg:
   tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
-  max_src_len: 1024
+  max_src_len: 250
 
 map_cfg:
   src_lang: de

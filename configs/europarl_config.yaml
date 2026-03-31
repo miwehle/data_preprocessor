@@ -4,7 +4,7 @@ download_cfg:
   dataset: Helsinki-NLP/europarl
   config: de-en
   split: train
-  max_examples: 1000
+  #max_examples: 1000
 
 norm_cfg:
   changes:
@@ -17,7 +17,7 @@ filter_cfg:
   predicates:
     - is_blank
     - [is_too_short, {min: 10}]
-    - [is_too_long, {max: 300}]
+    - [is_too_long, {max: 1500}]
     - contains_url
     - contains_email
     - contains_control_chars
@@ -30,7 +30,7 @@ filter_cfg:
 
 tokenize_cfg:
   tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
-  max_src_len: null
+  max_src_len: 250
 
 map_cfg:
   src_lang: de
