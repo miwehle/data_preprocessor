@@ -75,7 +75,9 @@ def tokenize_examples(
         src_seq_len = len(tokenized_translation[src_lang]["input_ids"])
         tgt_lang = next(lang for lang in tokenized_translation if lang != src_lang)
         tgt_seq_len = len(tokenized_translation[tgt_lang]["input_ids"])
-        if max_seq_len is not None and max(src_seq_len, tgt_seq_len) > max_seq_len:
+        if max_seq_len is not None and (
+            src_seq_len > max_seq_len or tgt_seq_len >= max_seq_len
+        ):
             if tokenize_reporter is not None:
                 tokenize_reporter.note_example_too_long(ex.get("id"))
             continue

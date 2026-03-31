@@ -63,9 +63,10 @@ def test_tokenize_example_adds_expected_structure():
 
 def test_tokenize_examples_removes_too_long():
     examples = [
-        {"id": 1, "translation": {"de": "eins zwei drei vier", "en": "one two three four"}},
-        {"id": 2, "translation": {"de": "eins zwei", "en": "one two three four"}},
-        {"id": 3, "translation": {"de": "eins zwei", "en": "one two"}},
+        {"id": 1, "translation": {"de": "eins zwei drei vier", "en": "one two"}},
+        {"id": 2, "translation": {"de": "eins zwei", "en": "one two three"}},
+        {"id": 3, "translation": {"de": "eins zwei drei", "en": "one two"}},
+        {"id": 4, "translation": {"de": "eins zwei", "en": "one two"}},
     ]
     report_path = Path(".local_tmp") / "tokenize_report_remove_case.txt"
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,9 +84,10 @@ def test_tokenize_examples_removes_too_long():
     finally:
         report.close()
 
-    assert [example["id"] for example in actual] == [3]
+    assert [example["id"] for example in actual] == [3, 4]
     assert report_path.read_text(encoding="utf-8") == (
         "{'seq_no': 1, 'removed_id': 1}\n"
         "{'seq_no': 2, 'removed_id': 2}\n"
-        "{'seq_no': 3, 'token_lengths': {'de': 2, 'en': 2}}\n"
+        "{'seq_no': 3, 'token_lengths': {'de': 3, 'en': 2}}\n"
+        "{'seq_no': 4, 'token_lengths': {'de': 2, 'en': 2}}\n"
     )
