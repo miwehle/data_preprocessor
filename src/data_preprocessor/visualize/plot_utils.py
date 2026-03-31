@@ -6,6 +6,39 @@ import re
 from pathlib import Path
 from textwrap import fill
 
+import matplotlib.pyplot as plt
+
+
+def show_loading_plot(title: str):
+    fig, ax = plt.subplots(figsize=(11, 6))
+    ax.set_title(title)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_yticks([])
+    ax.set_xlabel("Loading dataset")
+    bar = ax.barh([0.35], [0], height=0.25, color="#1f77b4")[0]
+    text = ax.text(0.5, 0.72, "Loading... 0%", transform=ax.transAxes, ha="center")
+    fig.tight_layout()
+    plt.show(block=False)
+    plt.pause(0.001)
+    shown = -1.0
+
+    def update(progress):
+        nonlocal shown
+        if progress is None:
+            text.set_text("Loading...")
+        else:
+            progress = min(1.0, max(0.0, progress))
+            if progress < 1.0 and progress - shown < 0.02:
+                return
+            bar.set_width(progress)
+            text.set_text(f"Loading... {progress:.0%}")
+            shown = progress
+        fig.canvas.draw_idle()
+        plt.pause(0.001)
+
+    return fig, ax, update
+
 
 def annotate_bars(ax, bars):
     annotations = []
