@@ -247,15 +247,29 @@ def attach_toolbar_hint(fig, text: str):
     return label
 
 
-def load_report_records(report_path: str | Path) -> list[dict]:
+def load_report_records(report_path: str | Path, progress=None) -> list[dict]:
     records: list[dict] = []
-    for line in Path(report_path).read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        record = ast.literal_eval(line)
-        if isinstance(record, dict):
-            records.append(record)
+    path = Path(report_path)
+    total = max(path.stat().st_size, 1)
+    read_bytes = 0
+    if progress is not None:
+        progress(0.0)
+    with path.open("rb") as f:
+        for line_no, line in enumerate(f, 1):
+            read_bytes += len(line)
+            raw = line.decode("utf-8").strip()
+            if not raw:
+                continue
+            try:
+                record = ast.literal_eval(raw)
+            except Exception as exc:
+                raise ValueError(f"Invalid report record at line {line_no} in {path}") from exc
+            if isinstance(record, dict):
+                records.append(record)
+            if progress is not None and line_no % 2000 == 0:
+                progress(read_bytes / total)
+    if progress is not None:
+        progress(1.0)
     return records
 
 

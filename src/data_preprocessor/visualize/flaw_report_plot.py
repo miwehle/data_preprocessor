@@ -9,6 +9,8 @@ try:
     from . import plot_utils as pu
 except ImportError:
     import plot_utils as pu
+
+
 def _count_flaws(records: list[dict]) -> tuple[Counter, Counter, Counter]:
     de_counts: Counter = Counter()
     en_counts: Counter = Counter()
@@ -22,13 +24,16 @@ def _count_flaws(records: list[dict]) -> tuple[Counter, Counter, Counter]:
     return de_counts, en_counts, pair_counts
 
 
-def plot_flaw_counts(report_path: str | Path):
+def plot_flaw_counts(report_path: str | Path, show_loading: bool = False):
     """
     Build two separate figures:
     1) grouped bar chart for de_flaws and en_flaws
     2) separate bar chart for pair_flaws
     """
-    records = pu.load_report_records(report_path)
+    fig_text = ax_text = progress = None
+    if show_loading:
+        fig_text, ax_text, progress = pu.show_loading_plot("Flaw Counts: de_flaws and en_flaws")
+    records = pu.load_report_records(report_path, progress)
     de_counts, en_counts, pair_counts = _count_flaws(records)
 
     text_flaws = sorted(
@@ -38,7 +43,10 @@ def plot_flaw_counts(report_path: str | Path):
     )
     pair_flaws = sorted(pair_counts.keys(), key=lambda flaw: pair_counts.get(flaw, 0), reverse=True)
 
-    fig_text, ax_text = plt.subplots(figsize=(12, 6))
+    if fig_text is None or ax_text is None:
+        fig_text, ax_text = plt.subplots(figsize=(12, 6))
+    else:
+        ax_text.clear()
     fig_pair, ax_pair = plt.subplots(figsize=(12, 6))
 
     pu.plot_grouped_category_counts(
@@ -81,7 +89,7 @@ def plot_flaw_counts(report_path: str | Path):
 
 
 def run(report_path: str | Path = "flaw_report.txt") -> None:
-    plot_flaw_counts(report_path)
+    plot_flaw_counts(report_path, show_loading=True)
     plt.show()
 
 
