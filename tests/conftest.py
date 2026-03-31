@@ -3,6 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
+from data_preprocessor.shared import close_data_preprocessor_logging
+
 # Keep Hugging Face datasets cache/temp paths inside the repo during tests.
 # This avoids stalls/locks on global cache and temp dirs (e.g. on corporate
 # machines where antivirus/endpoint protection may aggressively scan them).
@@ -19,3 +23,9 @@ os.environ.setdefault("HF_HOME", str(_HF_HOME))
 os.environ.setdefault("HF_DATASETS_CACHE", str(_HF_DATASETS_CACHE))
 os.environ.setdefault("TEMP", str(_TMP))
 os.environ.setdefault("TMP", str(_TMP))
+
+
+@pytest.fixture(autouse=True)
+def _close_data_preprocessor_logging_after_test():
+    yield
+    close_data_preprocessor_logging()

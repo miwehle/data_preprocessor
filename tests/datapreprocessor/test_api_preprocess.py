@@ -255,3 +255,36 @@ def test_preprocess_uses_incremented_dataset_dir(monkeypatch):
     assert calls[-1][1]["output_path"] == (
         run_dir / "artifacts" / "datasets" / "europarl_de-en_train (1)"
     )
+
+
+def test_preprocess_logs_to_staging_preprocessing_log(monkeypatch):
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
+
+    monkeypatch.setattr(ops, "download_examples", lambda **kwargs: [])
+    monkeypatch.setattr(ops, "load", lambda path: [])
+    monkeypatch.setattr(ops, "save", lambda examples, output_path: None)
+    monkeypatch.setattr(ops, "norm_examples", lambda ds, changes, norm_reporter: ds)
+    monkeypatch.setattr(ops, "filter_examples", lambda ds, keep_fn: ds)
+    monkeypatch.setattr(ops, "map_examples", lambda ds, **kwargs: ds)
+    monkeypatch.setattr(
+        ops,
+        "tokenize_examples",
+        lambda ds, tokenizer, tokenize_reporter=None, max_src_len=None, src_lang="de", **kwargs: iter(ds),
+    )
+    _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(ops, "_artifacts_root", lambda: run_dir / "artifacts" / "datasets")
+
+    ops.preprocess(
+        download_cfg={"dataset": "Helsinki-NLP/europarl", "config": "de-en", "split": "train"},
+        tokenize_cfg={"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+        map_cfg={"src_lang": "de", "tgt_lang": "en"},
+    )
+
+    log_path = (
+        run_dir / "artifacts" / "datasets" / "europarl_de-en_train_staging" / "preprocessing.log"
+    )
+    assert log_path.is_file()
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "Start download" in log_text
+    assert "Finished map" in log_text

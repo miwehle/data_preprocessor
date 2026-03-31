@@ -22,7 +22,7 @@ from data_preprocessor.load import download_examples
 from data_preprocessor.map import map_examples
 from data_preprocessor.metadata import build_dataset_meta
 from data_preprocessor.norm import NormReport, changes as norm_changes, norm_examples
-from data_preprocessor.shared import log_calls
+from data_preprocessor.shared import configure_data_preprocessor_logging, log_calls
 from data_preprocessor.tokenizer import (
     TokenizeReport,
     create_hf_tokenizer,
@@ -361,6 +361,7 @@ def preprocess(
 
     for path in paths.values():
         path.parent.mkdir(parents=True, exist_ok=True)
+    configure_data_preprocessor_logging(log_path=paths["raw_output"].parent / "preprocessing.log")
 
     parameters = {
         "schema_version": "1",
