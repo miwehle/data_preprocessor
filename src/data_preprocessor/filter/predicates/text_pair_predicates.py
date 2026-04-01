@@ -1,5 +1,6 @@
 from __future__ import annotations
 import builtins
+from random import random
 
 
 def bad_length_ratio(de: str, en: str, min, max) -> bool:
@@ -10,6 +11,8 @@ def bad_length_ratio(de: str, en: str, min, max) -> bool:
     if r < min or r > max:
         return True
 
-
 def are_equal(de, en):
     return de.lower() == en.lower()
+
+def reject_with_probability(de, en, prob):
+    return random() < prob
