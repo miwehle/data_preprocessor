@@ -59,7 +59,6 @@ def resolve_training_token_ids(tokenizer: Any) -> dict[str, int]:
     }
 
 
-@_log_calls
 def tokenize_examples(
     ds: Iterable[Example],
     tokenizer: Tokenizer,
