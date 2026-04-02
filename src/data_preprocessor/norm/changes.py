@@ -1,3 +1,8 @@
+"""Normalization changes addressable by name from YAML config via getattr().
+
+Only keep intentionally YAML-exposed callables in this module.
+"""
+
 import re
 from typing import Callable
 
