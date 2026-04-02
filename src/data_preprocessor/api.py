@@ -284,6 +284,7 @@ def preprocess(
     with paths["preprocess_config"].open("w", encoding="utf-8") as f:
         yaml.safe_dump(parameters, f, sort_keys=False, allow_unicode=True)
 
+    # core
     download(download_cfg, paths["raw_output"])
     norm(norm_cfg, paths["raw_output"], paths["norm_output"], paths["norm_report"])
     filter(filter_cfg, paths["norm_output"], paths["filter_output"], paths["flaw_report"])
