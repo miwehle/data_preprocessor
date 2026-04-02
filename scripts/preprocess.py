@@ -6,7 +6,7 @@ This script receives a YAML config file. The config file is passed through to
 Example: `configs/europarl_config.yaml`
 Run it with: `python scripts/preprocess.py configs/europarl_config.yaml`
 
-Datasets are stored under `artifacts/datasets`.
+Datasets are stored under `artifacts/datasets` unless `artifacts_dir` is set.
 """
 
 from __future__ import annotations
@@ -48,6 +48,8 @@ def main() -> int:
             map_cfg=MapConfig(**cfg["map_cfg"]),
             norm_cfg=NormConfig(**cfg["norm_cfg"]) if cfg.get("norm_cfg") is not None else None,
             filter_cfg=FilterConfig(**cfg["filter_cfg"]) if cfg.get("filter_cfg") is not None else None,
+            artifacts_dir=cfg.get("artifacts_dir"),
+            staging_dir=cfg.get("staging_dir"),
             write_jsonl=cfg.get("write_jsonl", True),
         )
     except Exception as exc:

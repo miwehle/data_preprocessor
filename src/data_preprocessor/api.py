@@ -41,7 +41,7 @@ from data_preprocessor.tokenizer import (
 from .io import load, save
 
 
-_log_calls = log_calls(lambda: _artifacts_root().parent / "data_preprocessor.log")
+_log_calls = log_calls(lambda: _artifacts_root() / "data_preprocessor.log")
 
 
 def _dataset_name_for_filesystem(dataset: str) -> str:
@@ -53,23 +53,25 @@ def _dataset_name_for_filesystem(dataset: str) -> str:
     return "dataset"
 
 
-def _run_output_roots(run_root: Path, run_index: int | None = None) -> tuple[Path, Path]:
+def _run_output_roots(
+    run_name: str, staging_root: Path, final_root: Path, run_index: int | None = None
+) -> tuple[Path, Path]:
     suffix = f" ({run_index})" if run_index is not None else ""
     return (
-        run_root.with_name(f"{run_root.name}_staging{suffix}"),
-        run_root.with_name(f"{run_root.name}{suffix}"),
+        staging_root / f"{run_name}_staging{suffix}",
+        final_root / f"{run_name}{suffix}",
     )
 
 
-def _next_available_run_dir(base_dir: Path) -> Path:
-    staging_dir, final_dir = _run_output_roots(base_dir)
+def _next_available_run_name(base_name: str, staging_root: Path, final_root: Path) -> str:
+    staging_dir, final_dir = _run_output_roots(base_name, staging_root, final_root)
     if not staging_dir.exists() and not final_dir.exists():
-        return base_dir
+        return base_name
 
     i = 1
     while True:
-        candidate = base_dir.with_name(f"{base_dir.name} ({i})")
-        staging_dir, final_dir = _run_output_roots(base_dir, i)
+        candidate = f"{base_name} ({i})"
+        staging_dir, final_dir = _run_output_roots(base_name, staging_root, final_root, i)
         if not staging_dir.exists() and not final_dir.exists():
             return candidate
         i += 1
@@ -80,7 +82,15 @@ def _repo_root() -> Path:
 
 
 def _artifacts_root() -> Path:
-    return _repo_root().parent / "artifacts" / "datasets"
+    return _repo_root().parent / "artifacts"
+
+
+def _datasets_root(artifacts_dir: str | Path | None) -> Path:
+    return (Path(artifacts_dir) if artifacts_dir is not None else _artifacts_root()) / "datasets"
+
+
+def _staging_root(artifacts_dir: str | Path | None, staging_dir: str | Path | None) -> Path:
+    return Path(staging_dir) if staging_dir is not None else _datasets_root(artifacts_dir)
 
 
 def _current_git_commit() -> str | None:
@@ -110,14 +120,10 @@ def _current_git_status() -> str:
         return "local changes exist"
 
 
-def _default_paths(*, dataset_dir: Path, dataset_name: str, write_jsonl: bool) -> dict[str, Path]:
-    run_index = None
-    match = re.search(r" \((\d+)\)$", dataset_dir.name)
-    if match:
-        run_index = int(match.group(1))
-        dataset_dir = dataset_dir.with_name(dataset_dir.name[: match.start()])
-
-    staging_dir, preprocessed_dir = _run_output_roots(dataset_dir, run_index)
+def _default_paths(
+    *, run_name: str, dataset_name: str, write_jsonl: bool, staging_root: Path, final_root: Path
+) -> dict[str, Path]:
+    staging_dir, preprocessed_dir = _run_output_roots(run_name, staging_root, final_root)
     suffix = ".jsonl" if write_jsonl else ""
     return {
         "raw_output": staging_dir / f"{dataset_name}_raw{suffix}",
@@ -286,6 +292,8 @@ def preprocess(
     *,
     norm_cfg: NormConfig | None = None,
     filter_cfg: FilterConfig | None = None,
+    artifacts_dir: str | Path | None = None,
+    staging_dir: str | Path | None = None,
     write_jsonl: bool = True,
 ) -> None:
     """Run the full preprocessing pipeline and produce translation-training output.
@@ -306,8 +314,16 @@ def preprocess(
     dataset_dir_name = f"{dataset_name}_{download_cfg.config}_{download_cfg.split}"
     if download_cfg.max_examples is not None:
         dataset_dir_name = f"{dataset_dir_name}_{download_cfg.max_examples}"
-    dataset_dir = _next_available_run_dir(_artifacts_root() / dataset_dir_name)
-    paths = _default_paths(dataset_dir=dataset_dir, dataset_name=dataset_name, write_jsonl=write_jsonl)
+    final_root = _datasets_root(artifacts_dir)
+    resolved_staging_root = _staging_root(artifacts_dir, staging_dir)
+    run_name = _next_available_run_name(dataset_dir_name, resolved_staging_root, final_root)
+    paths = _default_paths(
+        run_name=run_name,
+        dataset_name=dataset_name,
+        write_jsonl=write_jsonl,
+        staging_root=resolved_staging_root,
+        final_root=final_root,
+    )
     for path in paths.values():
         path.parent.mkdir(parents=True, exist_ok=True)
     configure_data_preprocessor_logging(log_path=paths["preprocessed_output"] / "preprocess.log")
@@ -334,6 +350,8 @@ def preprocess(
         "data_preprocessor_git_status": _current_git_status(),
         "dataset_schema_version": "1",
         "write_jsonl": write_jsonl,
+        "artifacts_dir": None if artifacts_dir is None else str(artifacts_dir),
+        "staging_dir": None if staging_dir is None else str(staging_dir),
         "download_cfg": asdict(download_cfg),
         "norm_cfg": asdict(norm_cfg),
         "filter_cfg": asdict(filter_cfg),
