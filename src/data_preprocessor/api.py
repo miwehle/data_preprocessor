@@ -219,10 +219,10 @@ def map(config: MapConfig, input_path: str | Path, output_path: str | Path) -> N
 
 @_log_calls
 def preprocess(
-    *,
     download_cfg: DownloadConfig,
     tokenize_cfg: TokenizeConfig,
     map_cfg: MapConfig,
+    *,
     norm_cfg: NormConfig | None = None,
     filter_cfg: FilterConfig | None = None,
     write_jsonl: bool = True,
