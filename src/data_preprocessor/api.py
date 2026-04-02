@@ -10,7 +10,7 @@ import re
 import subprocess
 from collections.abc import Callable, Iterable
 from contextlib import closing, nullcontext
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
@@ -150,6 +150,32 @@ def _run_with_optional_report(
         save(transform(ds, report), output_path)
 
 
+def _validate_preprocess_configs(
+    download_cfg: DownloadConfig, tokenize_cfg: TokenizeConfig, map_cfg: MapConfig,
+    training_token_ids: dict[str, int],
+) -> None:
+    if tokenize_cfg.src_lang is not None and tokenize_cfg.src_lang != map_cfg.src_lang:
+        raise ValueError(
+            f"Conflicting src_lang values: tokenize_cfg={tokenize_cfg.src_lang!r}, "
+            f"map_cfg={map_cfg.src_lang!r}."
+        )
+    if map_cfg.id_key is not None and map_cfg.id_key != download_cfg.id_field:
+        raise ValueError(
+            f"Conflicting id field values: download_cfg.id_field={download_cfg.id_field!r}, "
+            f"map_cfg.id_key={map_cfg.id_key!r}."
+        )
+    if map_cfg.tgt_bos_id is not None and map_cfg.tgt_bos_id != training_token_ids["tgt_bos_id"]:
+        raise ValueError(
+            f"Conflicting tgt_bos_id values: map_cfg={map_cfg.tgt_bos_id!r}, "
+            f"tokenizer={training_token_ids['tgt_bos_id']!r}."
+        )
+    if map_cfg.tgt_eos_id is not None and map_cfg.tgt_eos_id != training_token_ids["tgt_eos_id"]:
+        raise ValueError(
+            f"Conflicting tgt_eos_id values: map_cfg={map_cfg.tgt_eos_id!r}, "
+            f"tokenizer={training_token_ids['tgt_eos_id']!r}."
+        )
+
+
 @_log_calls
 def download(config: DownloadConfig, output_path: str | Path) -> None:
     save(download_examples(config), output_path)
@@ -250,23 +276,15 @@ def preprocess(
         path.parent.mkdir(parents=True, exist_ok=True)
     configure_data_preprocessor_logging(log_path=paths["preprocessed_output"] / "preprocess.log")
 
-    resolved_tokenize_cfg = TokenizeConfig(
-        tokenizer_model_name=tokenize_cfg.tokenizer_model_name,
-        tokenizer_kwargs=tokenize_cfg.tokenizer_kwargs,
-        tokenize_debug=tokenize_cfg.tokenize_debug,
-        max_seq_len=tokenize_cfg.max_seq_len,
-        src_lang=tokenize_cfg.src_lang or map_cfg.src_lang,
-    )
-    tokenizer = create_hf_tokenizer(resolved_tokenize_cfg.tokenizer_model_name)
+    tokenizer = create_hf_tokenizer(tokenize_cfg.tokenizer_model_name)
     training_token_ids = resolve_training_token_ids(tokenizer)
-    resolved_map_cfg = MapConfig(
-        src_lang=map_cfg.src_lang,
-        tgt_lang=map_cfg.tgt_lang,
+    _validate_preprocess_configs(download_cfg, tokenize_cfg, map_cfg, training_token_ids)
+    resolved_tokenize_cfg = replace(tokenize_cfg, src_lang=tokenize_cfg.src_lang or map_cfg.src_lang)
+    resolved_map_cfg = replace(
+        map_cfg,
         id_key=map_cfg.id_key or download_cfg.id_field,
-        tokenized_key=map_cfg.tokenized_key,
         tgt_bos_id=training_token_ids["tgt_bos_id"] if map_cfg.tgt_bos_id is None else map_cfg.tgt_bos_id,
         tgt_eos_id=training_token_ids["tgt_eos_id"] if map_cfg.tgt_eos_id is None else map_cfg.tgt_eos_id,
-        include_text=map_cfg.include_text,
     )
     parameters = {
         "schema_version": "1",
