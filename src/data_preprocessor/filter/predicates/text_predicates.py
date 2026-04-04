@@ -178,3 +178,25 @@ def has_unbalanced_brackets(text: str) -> bool:
                 return True
 
     return len(stack) != 0
+
+
+# --- Script heuristics -------------------------------------------------------
+
+def target_not_latin_like(
+    text: str, *, min_letters: int = 20, min_latin_ratio: float = 0.6
+) -> bool:
+    letter_count = 0
+    latin_count = 0
+
+    for ch in text:
+        if not ch.isalpha():
+            continue
+        letter_count += 1
+        name = unicodedata.name(ch, "")
+        if "LATIN" in name:
+            latin_count += 1
+
+    if letter_count < min_letters:
+        return False
+
+    return (latin_count / letter_count) < min_latin_ratio

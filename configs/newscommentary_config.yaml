@@ -1,0 +1,38 @@
+write_jsonl: true
+
+download_cfg:
+  dataset: Helsinki-NLP/news_commentary
+  config: de-en
+  split: train
+  overwrite_ids: true
+
+norm_cfg:
+  changes:
+    - strip_edges
+    - remove_control_chars
+    - collapse_whitespace
+    - normalize_unicode_quotes
+
+filter_cfg:
+  predicates:
+    - is_blank
+    - [is_too_short, {min: 10}]
+    - [is_too_long, {max: 1500}]
+    - contains_url
+    - contains_email
+    - contains_control_chars
+    - contains_invisible_format_chars
+    - has_odd_number_of_quotes
+    - has_unbalanced_brackets
+    - [target_not_latin_like, {min_letters: 10, min_latin_ratio: 0.99}]
+  pair_predicates:
+    - [bad_length_ratio, {min: 0.33, max: 3}]
+    - are_equal
+
+tokenize_cfg:
+  tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
+  max_seq_len: 250
+
+map_cfg:
+  src_lang: de
+  tgt_lang: en
