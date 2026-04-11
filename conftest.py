@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 import sys
@@ -7,7 +7,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 SRC = PROJECT_ROOT / "src"
-SHARED_SRC = PROJECT_ROOT.parent / "nmt_lab_shared" / "src"
+SHARED_SRC = PROJECT_ROOT.parent / "lab_infrastructure" / "src"
 TMP = PROJECT_ROOT / ".local_tmp"
 HF_HOME = PROJECT_ROOT / ".hf_home"
 HF_DATASETS_CACHE = HF_HOME / "datasets"
@@ -30,3 +30,4 @@ def pytest_configure(config) -> None:
     base_temp = TMP / "pytest"
     base_temp.mkdir(parents=True, exist_ok=True)
     config.option.basetemp = str(base_temp)
+

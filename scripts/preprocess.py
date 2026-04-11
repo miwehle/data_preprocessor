@@ -1,4 +1,4 @@
-"""Run the dataset preprocessing pipeline from the command line.
+﻿"""Run the dataset preprocessing pipeline from the command line.
 
 This script receives a YAML config file. The config file is passed through to
 `preprocess(...)` via its stage-specific `*_cfg` dictionaries.
@@ -16,14 +16,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
-SHARED_SRC_DIR = REPO_ROOT.parent / "nmt_lab_shared" / "src"
+SHARED_SRC_DIR = REPO_ROOT.parent / "lab_infrastructure" / "src"
 for path in (SRC_DIR, SHARED_SRC_DIR):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
 
 def main() -> int:
-    from nmt_lab_shared.run_config import read_run_config
+    from lab_infrastructure.run_config import read_run_config
 
     from data_preprocessor import DownloadConfig, FilterConfig, MapConfig, NormConfig, TokenizeConfig, preprocess
 
@@ -52,3 +52,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

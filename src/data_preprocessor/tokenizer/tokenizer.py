@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
-from nmt_lab_shared.logging import get_logger, log_calls
+from lab_infrastructure.logging import get_logger, log_calls
 
 from ..shared import TokenizeConfig
 from .tokenize_example import Example, TokenizeReporter, Tokenizer, tokenize_example
@@ -80,3 +80,4 @@ def tokenize_examples(
                 {lang: len(data["input_ids"]) for lang, data in tokenized_translation.items()}
             )
         yield tokenized
+

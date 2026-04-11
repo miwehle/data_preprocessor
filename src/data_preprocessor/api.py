@@ -15,8 +15,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from nmt_lab_shared.logging import get_logger, log_calls
-from nmt_lab_shared.run_config import write_run_config
+from lab_infrastructure.logging import get_logger, log_calls
+from lab_infrastructure.run_config import write_run_config
 
 from data_preprocessor.filter import FlawReport, filter_examples, keep, pair_predicates, predicates
 from data_preprocessor.load import download_examples
@@ -341,3 +341,4 @@ def preprocess(
         yaml.safe_dump(dataset_manifest, f, sort_keys=False, allow_unicode=True)
 
     save(mapped, paths["preprocessed_output"])
+
