@@ -1,4 +1,4 @@
-﻿# DataPreprocessor
+# DataPreprocessor
 
 Kleine, klare Pipeline zur Aufbereitung von de-en Beispielen fuer Seq2Seq-Training:
 `download -> norm -> filter -> tokenize`.

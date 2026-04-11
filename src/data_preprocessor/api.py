@@ -1,4 +1,4 @@
-﻿"""Thin public orchestration layer.
+"""Thin public orchestration layer.
 
 This module coordinates I/O and delegates transformation logic to the
 specialized `data_preprocessor.*` modules. Keep business logic out of this file.

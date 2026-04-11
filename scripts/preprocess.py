@@ -1,4 +1,4 @@
-﻿"""Run the dataset preprocessing pipeline from the command line.
+"""Run the dataset preprocessing pipeline from the command line.
 
 This script receives a YAML config file. The config file is passed through to
 `preprocess(...)` via its stage-specific `*_cfg` dictionaries.
