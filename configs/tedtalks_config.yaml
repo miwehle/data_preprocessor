@@ -1,19 +1,19 @@
 write_jsonl: true
 
-load_cfg:
+load_config:
   path_name: parquet
   split: train
   data_files: https://huggingface.co/datasets/IWSLT/iwslt2017/resolve/b2dcd74c28e4544eb5c9bb76ace449ea26bbe909/iwslt2017-de-en/iwslt2017-train.parquet
   dataset_name: iwslt2017-de-en
 
-norm_cfg:
+norm_config:
   changes:
     - strip_edges
     - remove_control_chars
     - collapse_whitespace
     - normalize_unicode_quotes
 
-filter_cfg:
+filter_config:
   predicates:
     - is_blank
     - [is_too_short, {min: 10}]
@@ -28,10 +28,10 @@ filter_cfg:
     - [bad_length_ratio, {min: 0.33, max: 3}]
     - are_equal
 
-tokenize_cfg:
+tokenize_config:
   tokenizer_model_name: Helsinki-NLP/opus-mt-de-en
   max_seq_len: 250
 
-map_cfg:
+map_config:
   src_lang: de
   tgt_lang: en

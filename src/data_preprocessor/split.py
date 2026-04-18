@@ -15,13 +15,13 @@ _RATIO_TOLERANCE = 1e-9
 
 def _validate_split_config(config: SplitConfig) -> Path:
     if config.dataset is None:
-        raise ValueError("split_cfg.dataset is required.")
+        raise ValueError("split_config.dataset is required.")
     if len(config.split_ratio) < 2:
-        raise ValueError("split_cfg.split_ratio must define at least two splits.")
+        raise ValueError("split_config.split_ratio must define at least two splits.")
     if any(ratio < 0 for ratio in config.split_ratio.values()):
-        raise ValueError("split_cfg.split_ratio values must be >= 0.")
+        raise ValueError("split_config.split_ratio values must be >= 0.")
     if abs(sum(config.split_ratio.values()) - 1.0) > _RATIO_TOLERANCE:
-        raise ValueError("split_cfg.split_ratio must sum to 1.0.")
+        raise ValueError("split_config.split_ratio must sum to 1.0.")
     dataset_dir = Path(config.dataset)
     if not dataset_dir.is_dir():
         raise FileNotFoundError(f"Dataset not found: {dataset_dir}")

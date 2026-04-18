@@ -19,10 +19,10 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
                 "artifacts_dir": "/content/drive/MyDrive/nmt_lab/artifacts",
                 "staging_dir": "/content/data_preprocessor_staging",
                 "write_jsonl": False,
-                "load_cfg": {"path_name": "Helsinki-NLP/europarl", "name": "de-en", "split": "train"},
-                "tokenize_cfg": {"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
-                "map_cfg": {"src_lang": "de", "tgt_lang": "en", "include_text": True},
-                "split_cfg": {"split_ratio": {"train": 0.9, "val": 0.1}, "seed": 17},
+                "load_config": {"path_name": "Helsinki-NLP/europarl", "name": "de-en", "split": "train"},
+                "tokenize_config": {"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
+                "map_config": {"src_lang": "de", "tgt_lang": "en", "include_text": True},
+                "split_config": {"split_ratio": {"train": 0.9, "val": 0.1}, "seed": 17},
             }
         ),
         encoding="utf-8",
@@ -47,14 +47,14 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
     assert excinfo.value.code == 0
     assert calls == [
         {
-            "load_cfg": api.LoadConfig(
+            "load_config": api.LoadConfig(
                 path_name="Helsinki-NLP/europarl", name="de-en", split="train"
             ),
-            "norm_cfg": None,
-            "filter_cfg": None,
-            "tokenize_cfg": api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
-            "map_cfg": api.MapConfig(src_lang="de", tgt_lang="en", include_text=True),
-            "split_cfg": api.SplitConfig(split_ratio={"train": 0.9, "val": 0.1}, seed=17),
+            "norm_config": None,
+            "filter_config": None,
+            "tokenize_config": api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
+            "map_config": api.MapConfig(src_lang="de", tgt_lang="en", include_text=True),
+            "split_config": api.SplitConfig(split_ratio={"train": 0.9, "val": 0.1}, seed=17),
             "artifacts_dir": "/content/drive/MyDrive/nmt_lab/artifacts",
             "staging_dir": "/content/data_preprocessor_staging",
             "write_jsonl": False,

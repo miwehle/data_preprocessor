@@ -1,7 +1,7 @@
 """Run the dataset preprocessing pipeline from the command line.
 
 This script receives a YAML config file. The config file is passed through to
-`preprocess(...)` via its stage-specific `*_cfg` dictionaries.
+`preprocess(...)` via its stage-specific `*_config` dictionaries.
 
 Example: `configs/europarl_config.yaml`
 Run it with: `python scripts/preprocess.py configs/europarl_config.yaml`
@@ -42,12 +42,12 @@ def main() -> int:
     try:
         cfg = read_run_config(Path(sys.argv[1]))
         preprocess(
-            load_cfg=LoadConfig(**cfg["load_cfg"]),
-            tokenize_cfg=TokenizeConfig(**cfg["tokenize_cfg"]),
-            map_cfg=MapConfig(**cfg["map_cfg"]),
-            norm_cfg=NormConfig(**cfg["norm_cfg"]) if cfg.get("norm_cfg") is not None else None,
-            filter_cfg=FilterConfig(**cfg["filter_cfg"]) if cfg.get("filter_cfg") is not None else None,
-            split_cfg=SplitConfig(**cfg["split_cfg"]) if cfg.get("split_cfg") is not None else None,
+            load_config=LoadConfig(**cfg["load_config"]),
+            tokenize_config=TokenizeConfig(**cfg["tokenize_config"]),
+            map_config=MapConfig(**cfg["map_config"]),
+            norm_config=NormConfig(**cfg["norm_config"]) if cfg.get("norm_config") is not None else None,
+            filter_config=FilterConfig(**cfg["filter_config"]) if cfg.get("filter_config") is not None else None,
+            split_config=SplitConfig(**cfg["split_config"]) if cfg.get("split_config") is not None else None,
             artifacts_dir=cfg.get("artifacts_dir"),
             staging_dir=cfg.get("staging_dir"),
             write_jsonl=cfg.get("write_jsonl", True),

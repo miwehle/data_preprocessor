@@ -114,31 +114,31 @@ def _run_with_optional_report(
 
 
 def _validate_preprocess_configs(
-    load_cfg: LoadConfig,
-    tokenize_cfg: TokenizeConfig,
-    map_cfg: MapConfig,
+    load_config: LoadConfig,
+    tokenize_config: TokenizeConfig,
+    map_config: MapConfig,
     training_token_ids: dict[str, int],
 ) -> None:
-    if load_cfg.data_files is not None and load_cfg.dataset_name is None:
-        raise ValueError("load_cfg.dataset_name is required when load_cfg.data_files is set.")
-    if tokenize_cfg.src_lang is not None and tokenize_cfg.src_lang != map_cfg.src_lang:
+    if load_config.data_files is not None and load_config.dataset_name is None:
+        raise ValueError("load_config.dataset_name is required when load_config.data_files is set.")
+    if tokenize_config.src_lang is not None and tokenize_config.src_lang != map_config.src_lang:
         raise ValueError(
-            f"Conflicting src_lang values: tokenize_cfg={tokenize_cfg.src_lang!r}, "
-            f"map_cfg={map_cfg.src_lang!r}."
+            f"Conflicting src_lang values: tokenize_config={tokenize_config.src_lang!r}, "
+            f"map_config={map_config.src_lang!r}."
         )
-    if map_cfg.id_key is not None and map_cfg.id_key != load_cfg.id_field:
+    if map_config.id_key is not None and map_config.id_key != load_config.id_field:
         raise ValueError(
-            f"Conflicting id field values: load_cfg.id_field={load_cfg.id_field!r}, "
-            f"map_cfg.id_key={map_cfg.id_key!r}."
+            f"Conflicting id field values: load_config.id_field={load_config.id_field!r}, "
+            f"map_config.id_key={map_config.id_key!r}."
         )
-    if map_cfg.tgt_bos_id is not None and map_cfg.tgt_bos_id != training_token_ids["tgt_bos_id"]:
+    if map_config.tgt_bos_id is not None and map_config.tgt_bos_id != training_token_ids["tgt_bos_id"]:
         raise ValueError(
-            f"Conflicting tgt_bos_id values: map_cfg={map_cfg.tgt_bos_id!r}, "
+            f"Conflicting tgt_bos_id values: map_config={map_config.tgt_bos_id!r}, "
             f"tokenizer={training_token_ids['tgt_bos_id']!r}."
         )
-    if map_cfg.tgt_eos_id is not None and map_cfg.tgt_eos_id != training_token_ids["tgt_eos_id"]:
+    if map_config.tgt_eos_id is not None and map_config.tgt_eos_id != training_token_ids["tgt_eos_id"]:
         raise ValueError(
-            f"Conflicting tgt_eos_id values: map_cfg={map_cfg.tgt_eos_id!r}, "
+            f"Conflicting tgt_eos_id values: map_config={map_config.tgt_eos_id!r}, "
             f"tokenizer={training_token_ids['tgt_eos_id']!r}."
         )
 
@@ -146,8 +146,8 @@ def _validate_preprocess_configs(
 def _collect_dataset_metadata(
     tokenizer: Any,
     training_token_ids: dict[str, int],
-    tokenize_cfg: TokenizeConfig,
-    map_cfg: MapConfig,
+    tokenize_config: TokenizeConfig,
+    map_config: MapConfig,
     num_examples: int,
 ) -> dict[str, object]:
     tokenizer_vocab_size = getattr(tokenizer, "vocab_size", None)
@@ -156,10 +156,10 @@ def _collect_dataset_metadata(
     base_vocab_size = int(tokenizer_vocab_size)
     return {
         "schema_version": 1,
-        "tokenizer_model_name": tokenize_cfg.tokenizer_model_name,
-        "src_lang": map_cfg.src_lang,
-        "tgt_lang": map_cfg.tgt_lang,
-        "id_field": map_cfg.id_key or "id",
+        "tokenizer_model_name": tokenize_config.tokenizer_model_name,
+        "src_lang": map_config.src_lang,
+        "tgt_lang": map_config.tgt_lang,
+        "id_field": map_config.id_key or "id",
         "src_field": "src_ids",
         "tgt_field": "tgt_ids",
         "base_vocab_size": base_vocab_size,
@@ -175,7 +175,7 @@ def _collect_dataset_metadata(
         "tgt_bos_id": training_token_ids["tgt_bos_id"],
         "tgt_eos_id": training_token_ids["tgt_eos_id"],
         "num_examples": num_examples,
-        "configured_max_seq_len": tokenize_cfg.max_seq_len,
+        "configured_max_seq_len": tokenize_config.max_seq_len,
     }
 
 
@@ -256,13 +256,13 @@ def split(config: SplitConfig) -> None:
 
 @_log_calls
 def preprocess(
-    load_cfg: LoadConfig,
-    tokenize_cfg: TokenizeConfig,
-    map_cfg: MapConfig,
+    load_config: LoadConfig,
+    tokenize_config: TokenizeConfig,
+    map_config: MapConfig,
     *,
-    norm_cfg: NormConfig | None = None,
-    filter_cfg: FilterConfig | None = None,
-    split_cfg: SplitConfig | None = None,
+    norm_config: NormConfig | None = None,
+    filter_config: FilterConfig | None = None,
+    split_config: SplitConfig | None = None,
     artifacts_dir: str | Path | None = None,
     staging_dir: str | Path | None = None,
     write_jsonl: bool = True,
@@ -279,15 +279,15 @@ def preprocess(
     """
 
     # initialize configs and output paths
-    norm_cfg = norm_cfg or NormConfig()
-    filter_cfg = filter_cfg or FilterConfig()
-    dataset_name = load_cfg.dataset_name or _dataset_name_for_filesystem(load_cfg.path_name)
+    norm_config = norm_config or NormConfig()
+    filter_config = filter_config or FilterConfig()
+    dataset_name = load_config.dataset_name or _dataset_name_for_filesystem(load_config.path_name)
     dataset_dir_name = dataset_name
-    if load_cfg.dataset_name is None and load_cfg.name is not None:
-        dataset_dir_name = f"{dataset_dir_name}_{load_cfg.name}"
-    dataset_dir_name = f"{dataset_dir_name}_{load_cfg.split}"
-    if load_cfg.max_examples is not None:
-        dataset_dir_name = f"{dataset_dir_name}_{load_cfg.max_examples}"
+    if load_config.dataset_name is None and load_config.name is not None:
+        dataset_dir_name = f"{dataset_dir_name}_{load_config.name}"
+    dataset_dir_name = f"{dataset_dir_name}_{load_config.split}"
+    if load_config.max_examples is not None:
+        dataset_dir_name = f"{dataset_dir_name}_{load_config.max_examples}"
     final_root = _datasets_root(artifacts_dir)
     resolved_staging_root = _staging_root(artifacts_dir, staging_dir)
     run_name = _next_available_run_name(dataset_dir_name, resolved_staging_root, final_root)
@@ -302,21 +302,23 @@ def preprocess(
         path.parent.mkdir(parents=True, exist_ok=True)
     get_logger("data_preprocessor", log_path=paths["preprocessed_output"] / "preprocess.log")
 
-    tokenizer = create_hf_tokenizer(tokenize_cfg.tokenizer_model_name)
+    tokenizer = create_hf_tokenizer(tokenize_config.tokenizer_model_name)
     training_token_ids = resolve_training_token_ids(tokenizer)
 
-    _validate_preprocess_configs(load_cfg, tokenize_cfg, map_cfg, training_token_ids)
+    _validate_preprocess_configs(load_config, tokenize_config, map_config, training_token_ids)
 
     # fill missing config fields
-    resolved_tokenize_cfg = replace(tokenize_cfg, src_lang=tokenize_cfg.src_lang or map_cfg.src_lang)
-    resolved_map_cfg = replace(
-        map_cfg,
-        id_key=map_cfg.id_key or load_cfg.id_field,
-        tgt_bos_id=training_token_ids["tgt_bos_id"] if map_cfg.tgt_bos_id is None else map_cfg.tgt_bos_id,
-        tgt_eos_id=training_token_ids["tgt_eos_id"] if map_cfg.tgt_eos_id is None else map_cfg.tgt_eos_id,
+    resolved_tokenize_config = replace(
+        tokenize_config, src_lang=tokenize_config.src_lang or map_config.src_lang
     )
-    resolved_split_cfg = (
-        replace(split_cfg, dataset=str(paths["preprocessed_output"])) if split_cfg is not None else None
+    resolved_map_config = replace(
+        map_config,
+        id_key=map_config.id_key or load_config.id_field,
+        tgt_bos_id=training_token_ids["tgt_bos_id"] if map_config.tgt_bos_id is None else map_config.tgt_bos_id,
+        tgt_eos_id=training_token_ids["tgt_eos_id"] if map_config.tgt_eos_id is None else map_config.tgt_eos_id,
+    )
+    resolved_split_config = (
+        replace(split_config, dataset=str(paths["preprocessed_output"])) if split_config is not None else None
     )
 
     # write preprocess_config.yaml
@@ -327,36 +329,39 @@ def preprocess(
             "write_jsonl": write_jsonl,
             "artifacts_dir": None if artifacts_dir is None else str(artifacts_dir),
             "staging_dir": None if staging_dir is None else str(staging_dir),
-            "load_cfg": asdict(load_cfg),
-            "norm_cfg": asdict(norm_cfg),
-            "filter_cfg": asdict(filter_cfg),
-            "tokenize_cfg": asdict(resolved_tokenize_cfg),
-            "map_cfg": asdict(resolved_map_cfg),
-            "split_cfg": None if resolved_split_cfg is None else asdict(resolved_split_cfg),
+            "load_config": asdict(load_config),
+            "norm_config": asdict(norm_config),
+            "filter_config": asdict(filter_config),
+            "tokenize_config": asdict(resolved_tokenize_config),
+            "map_config": asdict(resolved_map_config),
+            "split_config": None if resolved_split_config is None else asdict(resolved_split_config),
         },
         repo_root=_repo_root(),
         git_key_prefix="data_preprocessor",
     )
 
     # core
-    load(load_cfg, paths["raw_output"])
-    norm(norm_cfg, paths["raw_output"], paths["norm_output"], paths["norm_report"])
-    filter(filter_cfg, paths["norm_output"], paths["filter_output"], paths["flaw_report"])
+    load(load_config, paths["raw_output"])
+    norm(norm_config, paths["raw_output"], paths["norm_output"], paths["norm_report"])
+    filter(filter_config, paths["norm_output"], paths["filter_output"], paths["flaw_report"])
     tokenize(
-        resolved_tokenize_cfg, paths["filter_output"], paths["tokenize_output"], paths["tokenize_report"]
+        resolved_tokenize_config,
+        paths["filter_output"],
+        paths["tokenize_output"],
+        paths["tokenize_report"],
     )
-    map(resolved_map_cfg, paths["tokenize_output"], paths["map_output"])
+    map(resolved_map_config, paths["tokenize_output"], paths["map_output"])
 
     mapped = io.load(paths["map_output"])
 
     # write dataset_manifest.yaml
     dataset_manifest = _collect_dataset_metadata(
-        tokenizer, training_token_ids, resolved_tokenize_cfg, resolved_map_cfg, len(mapped)
+        tokenizer, training_token_ids, resolved_tokenize_config, resolved_map_config, len(mapped)
     )
     with paths["dataset_manifest"].open("w", encoding="utf-8") as f:
         yaml.safe_dump(dataset_manifest, f, sort_keys=False, allow_unicode=True)
 
     io.save(mapped, paths["preprocessed_output"])
-    if resolved_split_cfg is not None:
-        split(resolved_split_cfg)
+    if resolved_split_config is not None:
+        split(resolved_split_config)
 
