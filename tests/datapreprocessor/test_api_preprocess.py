@@ -16,20 +16,20 @@ def _run_dir() -> Path:
 
 
 def _patch_common_io(monkeypatch, *, capture_save: bool, calls: list[tuple[str, dict]]) -> None:
-    monkeypatch.setattr(api, "load", lambda path: [])
+    monkeypatch.setattr(api.io, "load", lambda path: [])
     if capture_save:
         monkeypatch.setattr(
-            api, "save", lambda examples, output_path: calls.append(("save", {"output_path": output_path}))
+            api.io, "save", lambda examples, output_path: calls.append(("save", {"output_path": output_path}))
         )
     else:
-        monkeypatch.setattr(api, "save", lambda examples, output_path: None)
+        monkeypatch.setattr(api.io, "save", lambda examples, output_path: None)
 
 
 def _patch_stage_spies(monkeypatch, calls: list[tuple[str, dict]]) -> None:
     def _record(name: str):
         return lambda *args: calls.append((name, {"args": args}))
 
-    monkeypatch.setattr(api, "download", _record("download"))
+    monkeypatch.setattr(api, "load", _record("load"))
     monkeypatch.setattr(api, "norm", _record("norm"))
     monkeypatch.setattr(api, "filter", _record("filter"))
     monkeypatch.setattr(api, "tokenize", _record("tokenize"))
@@ -58,7 +58,7 @@ def test_preprocess_calls_stages_in_order(monkeypatch):
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(
+        load_cfg=api.LoadConfig(
             path_name="Helsinki-NLP/europarl", name="de-en", split="train", max_examples=123
         ),
         norm_cfg=api.NormConfig(changes=["strip_edges", "collapse_whitespace"]),
@@ -66,7 +66,7 @@ def test_preprocess_calls_stages_in_order(monkeypatch):
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en", include_text=True),
     )
 
-    assert [name for name, _ in calls] == ["download", "norm", "filter", "tokenize", "map", "save"]
+    assert [name for name, _ in calls] == ["load", "norm", "filter", "tokenize", "map", "save"]
     assert calls[0][1]["args"][0].max_examples == 123
     assert calls[0][1]["args"][0].include_ids is True
     norm_call = next(kwargs for name, kwargs in calls if name == "norm")
@@ -86,7 +86,7 @@ def test_preprocess_derives_filesystem_dataset_name(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    def fake_download(config, output_path):
+    def fake_load(config, output_path):
         seen_raw_output_paths.append(Path(output_path))
 
     def fake_map(config, input_path, output_path):
@@ -95,14 +95,14 @@ def test_preprocess_derives_filesystem_dataset_name(monkeypatch):
     _patch_common_io(monkeypatch, capture_save=False, calls=[])
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
-    monkeypatch.setattr(api, "download", fake_download)
+    monkeypatch.setattr(api, "load", fake_load)
     monkeypatch.setattr(api, "norm", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "filter", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "tokenize", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "map", fake_map)
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Org/My-Data Set+V1", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Org/My-Data Set+V1", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
     )
@@ -127,7 +127,7 @@ def test_preprocess_passes_training_token_ids_to_map(monkeypatch):
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en", max_seq_len=256),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
     )
@@ -140,8 +140,8 @@ def test_preprocess_passes_training_token_ids_to_map(monkeypatch):
 def test_filter_uses_configured_predicates(monkeypatch):
     seen = {}
 
-    monkeypatch.setattr(api, "load", lambda path: [{"translation": {"de": "x", "en": "y"}}])
-    monkeypatch.setattr(api, "save", lambda examples, output_path: list(examples))
+    monkeypatch.setattr(api.io, "load", lambda path: [{"translation": {"de": "x", "en": "y"}}])
+    monkeypatch.setattr(api.io, "save", lambda examples, output_path: list(examples))
 
     def fake_filter_examples(ds, keep_fn):
         seen["text_flaws"] = keep_fn.keywords["text_flaws"]
@@ -169,14 +169,14 @@ def test_preprocess_writes_dataset_manifest(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    monkeypatch.setattr(api, "load", lambda path: [{"id": 1}, {"id": 2}, {"id": 3}])
-    monkeypatch.setattr(api, "save", lambda examples, output_path: None)
+    monkeypatch.setattr(api.io, "load", lambda path: [{"id": 1}, {"id": 2}, {"id": 3}])
+    monkeypatch.setattr(api.io, "save", lambda examples, output_path: None)
     _patch_stage_spies(monkeypatch, [])
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en", max_seq_len=256),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
     )
@@ -217,7 +217,7 @@ def test_preprocess_uses_incremented_dataset_dir(monkeypatch):
     (run_dir / "artifacts" / "datasets" / "europarl_de-en_train").mkdir(parents=True, exist_ok=True)
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
     )
@@ -233,9 +233,9 @@ def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    monkeypatch.setattr(api, "download_examples", lambda config: [])
-    monkeypatch.setattr(api, "load", lambda path: [])
-    monkeypatch.setattr(api, "save", lambda examples, output_path: None)
+    monkeypatch.setattr(api, "load_examples", lambda config: [])
+    monkeypatch.setattr(api.io, "load", lambda path: [])
+    monkeypatch.setattr(api.io, "save", lambda examples, output_path: None)
     monkeypatch.setattr(api, "norm_examples", lambda ds, config=None, norm_reporter=None: ds)
     monkeypatch.setattr(api, "filter_examples", lambda ds, keep_fn: ds)
     monkeypatch.setattr(api, "map_examples", lambda ds, config: ds)
@@ -246,7 +246,7 @@ def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
     )
@@ -254,7 +254,7 @@ def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
     log_path = run_dir / "artifacts" / "datasets" / "europarl_de-en_train" / "preprocess.log"
     assert log_path.is_file()
     log_text = log_path.read_text(encoding="utf-8")
-    assert "Start download" in log_text
+    assert "Start load" in log_text
     assert "Finished map" in log_text
 
 
@@ -268,7 +268,7 @@ def test_preprocess_uses_separate_staging_dir(monkeypatch):
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
         staging_dir=staging_root,
@@ -284,7 +284,7 @@ def test_preprocess_uses_dataset_name_for_generic_downloads(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    def fake_download(config, output_path):
+    def fake_load(config, output_path):
         seen_raw_output_paths.append(Path(output_path))
 
     def fake_map(config, input_path, output_path):
@@ -293,14 +293,14 @@ def test_preprocess_uses_dataset_name_for_generic_downloads(monkeypatch):
     _patch_common_io(monkeypatch, capture_save=False, calls=[])
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
-    monkeypatch.setattr(api, "download", fake_download)
+    monkeypatch.setattr(api, "load", fake_load)
     monkeypatch.setattr(api, "norm", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "filter", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "tokenize", lambda config, input_path, output_path, report_path=None: None)
     monkeypatch.setattr(api, "map", fake_map)
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(
+        load_cfg=api.LoadConfig(
             path_name="parquet",
             split="train",
             data_files="https://huggingface.co/datasets/org/ds/resolve/rev/name/train.parquet",
@@ -325,7 +325,7 @@ def test_preprocess_requires_dataset_name_for_generic_downloads(monkeypatch):
 
     try:
         api.preprocess(
-            download_cfg=api.DownloadConfig(
+            load_cfg=api.LoadConfig(
                 path_name="parquet",
                 split="train",
                 data_files="https://huggingface.co/datasets/org/ds/resolve/rev/name/train.parquet",
@@ -349,13 +349,13 @@ def test_preprocess_calls_split_after_writing_base_dataset(monkeypatch):
     monkeypatch.setattr(api, "split", lambda config: calls.append(("split", {"config": config})))
 
     api.preprocess(
-        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        load_cfg=api.LoadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
         tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
         split_cfg=api.SplitConfig(split_ratio={"train": 0.9, "val": 0.1}, seed=13),
     )
 
-    assert [name for name, _ in calls] == ["download", "norm", "filter", "tokenize", "map", "save", "split"]
+    assert [name for name, _ in calls] == ["load", "norm", "filter", "tokenize", "map", "save", "split"]
     split_call = calls[-1][1]["config"]
     assert split_call == api.SplitConfig(
         dataset=str(run_dir / "artifacts" / "datasets" / "europarl_de-en_train"),

@@ -1,10 +1,10 @@
-from .config import DownloadConfig, FilterConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
+from .config import FilterConfig, LoadConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
 from .resolve import resolve_named_callables
 from .types import Example
 
 __all__ = [
     "Example",
-    "DownloadConfig",
+    "LoadConfig",
     "NormConfig",
     "FilterConfig",
     "TokenizeConfig",

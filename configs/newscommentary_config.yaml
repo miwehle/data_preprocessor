@@ -1,6 +1,6 @@
 write_jsonl: true
 
-download_cfg:
+load_cfg:
   path_name: Helsinki-NLP/news_commentary
   name: de-en
   split: train

@@ -1,15 +1,15 @@
-from .api import download, filter, map, norm, preprocess, split, tokenize
-from .shared import DownloadConfig, FilterConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
+from .api import filter, load, map, norm, preprocess, split, tokenize
+from .shared import FilterConfig, LoadConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
 
 __all__ = [
-    "DownloadConfig",
+    "LoadConfig",
     "NormConfig",
     "FilterConfig",
     "TokenizeConfig",
     "MapConfig",
     "SplitConfig",
     "preprocess",
-    "download",
+    "load",
     "filter",
     "map",
     "norm",

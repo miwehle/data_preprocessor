@@ -5,7 +5,7 @@ from typing import Any
 
 
 @dataclass(frozen=True, kw_only=True)
-class DownloadConfig:
+class LoadConfig:
     path_name: str
     name: str | None = None
     split: str

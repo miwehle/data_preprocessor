@@ -1,10 +1,10 @@
 # DataPreprocessor
 
 Kleine, klare Pipeline zur Aufbereitung von de-en Beispielen fuer Seq2Seq-Training:
-`download -> norm -> filter -> tokenize`.
+`load -> norm -> filter -> tokenize`.
 
 ## Hauptfunktionen
-- `download`: laedt Rohdaten konsistent und reproduzierbar.
+- `load`: laedt Rohdaten konsistent und reproduzierbar.
 - `norm`: normalisiert Texte (z. B. Whitespace/Zeichenbereinigung) ohne Seiteneffekte am Input.
 - `filter`: entfernt problematische Beispiele ueber klar definierte Praedikate.
 - `tokenize`: erzeugt modellfertige Token-Features fuer beide Sprachen.

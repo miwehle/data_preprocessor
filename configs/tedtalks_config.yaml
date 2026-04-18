@@ -1,6 +1,6 @@
 write_jsonl: true
 
-download_cfg:
+load_cfg:
   path_name: parquet
   split: train
   data_files: https://huggingface.co/datasets/IWSLT/iwslt2017/resolve/b2dcd74c28e4544eb5c9bb76ace449ea26bbe909/iwslt2017-de-en/iwslt2017-train.parquet

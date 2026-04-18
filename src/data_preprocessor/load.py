@@ -5,7 +5,7 @@ from typing import Any
 
 from datasets import Dataset, load_dataset
 
-from data_preprocessor.shared import DownloadConfig, Example
+from data_preprocessor.shared import Example, LoadConfig
 
 
 def attach_ids(
@@ -38,7 +38,7 @@ def attach_ids(
     return out
 
 
-def download_examples(config: DownloadConfig) -> Dataset | list[Example]:
+def load_examples(config: LoadConfig) -> Dataset | list[Example]:
     """Load one dataset split from Hugging Face and optionally attach IDs."""
     ds = load_dataset(path=config.path_name, name=config.name, split=config.split, data_files=config.data_files)
     records = ds if config.max_examples is None else ds.select(range(min(config.max_examples, len(ds))))

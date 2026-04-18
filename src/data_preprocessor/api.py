@@ -19,10 +19,10 @@ from lab_infrastructure.logging import get_logger, log_calls
 from lab_infrastructure.run_config import write_run_config
 
 from data_preprocessor.filter import FlawReport, filter_examples, keep, pair_predicates, predicates
-from data_preprocessor.load import download_examples
+from data_preprocessor.load import load_examples
 from data_preprocessor.map import map_examples
 from data_preprocessor.norm import NormReport, changes as norm_changes, norm_examples
-from data_preprocessor.shared import DownloadConfig, FilterConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
+from data_preprocessor.shared import FilterConfig, LoadConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
 from data_preprocessor.split import split_dataset
 from data_preprocessor.tokenizer import (
     TokenizeReport,
@@ -31,7 +31,7 @@ from data_preprocessor.tokenizer import (
     tokenize_examples,
 )
 
-from .io import load, save
+from . import io
 
 
 def _dataset_name_for_filesystem(dataset: str) -> str:
@@ -107,28 +107,28 @@ def _run_with_optional_report(
     make_report: Callable[[str | Path], Any],
     transform: Callable[[Iterable[dict], Any | None], Iterable[dict]],
 ) -> None:
-    ds = load(input_path)
+    ds = io.load(input_path)
     report_context = closing(make_report(report_path)) if report_path is not None else nullcontext(None)
     with report_context as report:
-        save(transform(ds, report), output_path)
+        io.save(transform(ds, report), output_path)
 
 
 def _validate_preprocess_configs(
-    download_cfg: DownloadConfig,
+    load_cfg: LoadConfig,
     tokenize_cfg: TokenizeConfig,
     map_cfg: MapConfig,
     training_token_ids: dict[str, int],
 ) -> None:
-    if download_cfg.data_files is not None and download_cfg.dataset_name is None:
-        raise ValueError("download_cfg.dataset_name is required when download_cfg.data_files is set.")
+    if load_cfg.data_files is not None and load_cfg.dataset_name is None:
+        raise ValueError("load_cfg.dataset_name is required when load_cfg.data_files is set.")
     if tokenize_cfg.src_lang is not None and tokenize_cfg.src_lang != map_cfg.src_lang:
         raise ValueError(
             f"Conflicting src_lang values: tokenize_cfg={tokenize_cfg.src_lang!r}, "
             f"map_cfg={map_cfg.src_lang!r}."
         )
-    if map_cfg.id_key is not None and map_cfg.id_key != download_cfg.id_field:
+    if map_cfg.id_key is not None and map_cfg.id_key != load_cfg.id_field:
         raise ValueError(
-            f"Conflicting id field values: download_cfg.id_field={download_cfg.id_field!r}, "
+            f"Conflicting id field values: load_cfg.id_field={load_cfg.id_field!r}, "
             f"map_cfg.id_key={map_cfg.id_key!r}."
         )
     if map_cfg.tgt_bos_id is not None and map_cfg.tgt_bos_id != training_token_ids["tgt_bos_id"]:
@@ -183,8 +183,8 @@ _log_calls = log_calls(get_logger("data_preprocessor", log_path=_artifacts_root(
 
 
 @_log_calls
-def download(config: DownloadConfig, output_path: str | Path) -> None:
-    save(download_examples(config), output_path)
+def load(config: LoadConfig, output_path: str | Path) -> None:
+    io.save(load_examples(config), output_path)
 
 
 @_log_calls
@@ -246,7 +246,7 @@ def tokenize(
 
 @_log_calls
 def map(config: MapConfig, input_path: str | Path, output_path: str | Path) -> None:
-    save(map_examples(load(input_path), config), output_path)
+    io.save(map_examples(io.load(input_path), config), output_path)
 
 
 @_log_calls
@@ -256,7 +256,7 @@ def split(config: SplitConfig) -> None:
 
 @_log_calls
 def preprocess(
-    download_cfg: DownloadConfig,
+    load_cfg: LoadConfig,
     tokenize_cfg: TokenizeConfig,
     map_cfg: MapConfig,
     *,
@@ -281,13 +281,13 @@ def preprocess(
     # initialize configs and output paths
     norm_cfg = norm_cfg or NormConfig()
     filter_cfg = filter_cfg or FilterConfig()
-    dataset_name = download_cfg.dataset_name or _dataset_name_for_filesystem(download_cfg.path_name)
+    dataset_name = load_cfg.dataset_name or _dataset_name_for_filesystem(load_cfg.path_name)
     dataset_dir_name = dataset_name
-    if download_cfg.dataset_name is None and download_cfg.name is not None:
-        dataset_dir_name = f"{dataset_dir_name}_{download_cfg.name}"
-    dataset_dir_name = f"{dataset_dir_name}_{download_cfg.split}"
-    if download_cfg.max_examples is not None:
-        dataset_dir_name = f"{dataset_dir_name}_{download_cfg.max_examples}"
+    if load_cfg.dataset_name is None and load_cfg.name is not None:
+        dataset_dir_name = f"{dataset_dir_name}_{load_cfg.name}"
+    dataset_dir_name = f"{dataset_dir_name}_{load_cfg.split}"
+    if load_cfg.max_examples is not None:
+        dataset_dir_name = f"{dataset_dir_name}_{load_cfg.max_examples}"
     final_root = _datasets_root(artifacts_dir)
     resolved_staging_root = _staging_root(artifacts_dir, staging_dir)
     run_name = _next_available_run_name(dataset_dir_name, resolved_staging_root, final_root)
@@ -305,13 +305,13 @@ def preprocess(
     tokenizer = create_hf_tokenizer(tokenize_cfg.tokenizer_model_name)
     training_token_ids = resolve_training_token_ids(tokenizer)
 
-    _validate_preprocess_configs(download_cfg, tokenize_cfg, map_cfg, training_token_ids)
+    _validate_preprocess_configs(load_cfg, tokenize_cfg, map_cfg, training_token_ids)
 
     # fill missing config fields
     resolved_tokenize_cfg = replace(tokenize_cfg, src_lang=tokenize_cfg.src_lang or map_cfg.src_lang)
     resolved_map_cfg = replace(
         map_cfg,
-        id_key=map_cfg.id_key or download_cfg.id_field,
+        id_key=map_cfg.id_key or load_cfg.id_field,
         tgt_bos_id=training_token_ids["tgt_bos_id"] if map_cfg.tgt_bos_id is None else map_cfg.tgt_bos_id,
         tgt_eos_id=training_token_ids["tgt_eos_id"] if map_cfg.tgt_eos_id is None else map_cfg.tgt_eos_id,
     )
@@ -327,7 +327,7 @@ def preprocess(
             "write_jsonl": write_jsonl,
             "artifacts_dir": None if artifacts_dir is None else str(artifacts_dir),
             "staging_dir": None if staging_dir is None else str(staging_dir),
-            "download_cfg": asdict(download_cfg),
+            "load_cfg": asdict(load_cfg),
             "norm_cfg": asdict(norm_cfg),
             "filter_cfg": asdict(filter_cfg),
             "tokenize_cfg": asdict(resolved_tokenize_cfg),
@@ -339,7 +339,7 @@ def preprocess(
     )
 
     # core
-    download(download_cfg, paths["raw_output"])
+    load(load_cfg, paths["raw_output"])
     norm(norm_cfg, paths["raw_output"], paths["norm_output"], paths["norm_report"])
     filter(filter_cfg, paths["norm_output"], paths["filter_output"], paths["flaw_report"])
     tokenize(
@@ -347,7 +347,7 @@ def preprocess(
     )
     map(resolved_map_cfg, paths["tokenize_output"], paths["map_output"])
 
-    mapped = load(paths["map_output"])
+    mapped = io.load(paths["map_output"])
 
     # write dataset_manifest.yaml
     dataset_manifest = _collect_dataset_metadata(
@@ -356,7 +356,7 @@ def preprocess(
     with paths["dataset_manifest"].open("w", encoding="utf-8") as f:
         yaml.safe_dump(dataset_manifest, f, sort_keys=False, allow_unicode=True)
 
-    save(mapped, paths["preprocessed_output"])
+    io.save(mapped, paths["preprocessed_output"])
     if resolved_split_cfg is not None:
         split(resolved_split_cfg)
 

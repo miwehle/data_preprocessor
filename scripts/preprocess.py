@@ -26,8 +26,8 @@ def main() -> int:
     from lab_infrastructure.run_config import read_run_config
 
     from data_preprocessor import (
-        DownloadConfig,
         FilterConfig,
+        LoadConfig,
         MapConfig,
         NormConfig,
         SplitConfig,
@@ -42,7 +42,7 @@ def main() -> int:
     try:
         cfg = read_run_config(Path(sys.argv[1]))
         preprocess(
-            download_cfg=DownloadConfig(**cfg["download_cfg"]),
+            load_cfg=LoadConfig(**cfg["load_cfg"]),
             tokenize_cfg=TokenizeConfig(**cfg["tokenize_cfg"]),
             map_cfg=MapConfig(**cfg["map_cfg"]),
             norm_cfg=NormConfig(**cfg["norm_cfg"]) if cfg.get("norm_cfg") is not None else None,
