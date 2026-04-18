@@ -1,4 +1,4 @@
-# Paste with Ctrl+Shift+V to IPython
+# Paste with Ctrl+V to IPython
 
 from data_preprocessor import SplitConfig, split
 
