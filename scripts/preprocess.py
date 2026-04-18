@@ -25,7 +25,15 @@ for path in (SRC_DIR, SHARED_SRC_DIR):
 def main() -> int:
     from lab_infrastructure.run_config import read_run_config
 
-    from data_preprocessor import DownloadConfig, FilterConfig, MapConfig, NormConfig, TokenizeConfig, preprocess
+    from data_preprocessor import (
+        DownloadConfig,
+        FilterConfig,
+        MapConfig,
+        NormConfig,
+        SplitConfig,
+        TokenizeConfig,
+        preprocess,
+    )
 
     if len(sys.argv) != 2:
         print("Usage: python scripts/preprocess.py <config-path>")
@@ -39,6 +47,7 @@ def main() -> int:
             map_cfg=MapConfig(**cfg["map_cfg"]),
             norm_cfg=NormConfig(**cfg["norm_cfg"]) if cfg.get("norm_cfg") is not None else None,
             filter_cfg=FilterConfig(**cfg["filter_cfg"]) if cfg.get("filter_cfg") is not None else None,
+            split_cfg=SplitConfig(**cfg["split_cfg"]) if cfg.get("split_cfg") is not None else None,
             artifacts_dir=cfg.get("artifacts_dir"),
             staging_dir=cfg.get("staging_dir"),
             write_jsonl=cfg.get("write_jsonl", True),

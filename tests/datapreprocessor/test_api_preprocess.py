@@ -336,3 +336,34 @@ def test_preprocess_requires_dataset_name_for_generic_downloads(monkeypatch):
         assert False, "expected ValueError"
     except ValueError as exc:
         assert "dataset_name" in str(exc)
+
+
+def test_preprocess_calls_split_after_writing_base_dataset(monkeypatch):
+    calls: list[tuple[str, dict]] = []
+    run_dir = _run_dir()
+    monkeypatch.chdir(run_dir)
+    _patch_common_io(monkeypatch, capture_save=True, calls=calls)
+    _patch_stage_spies(monkeypatch, calls)
+    _patch_training_token_ids(monkeypatch)
+    monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
+    monkeypatch.setattr(api, "split", lambda config: calls.append(("split", {"config": config})))
+
+    api.preprocess(
+        download_cfg=api.DownloadConfig(path_name="Helsinki-NLP/europarl", name="de-en", split="train"),
+        tokenize_cfg=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
+        map_cfg=api.MapConfig(src_lang="de", tgt_lang="en"),
+        split_cfg=api.SplitConfig(split_ratio={"train": 0.9, "val": 0.1}, seed=13),
+    )
+
+    assert [name for name, _ in calls] == ["download", "norm", "filter", "tokenize", "map", "save", "split"]
+    split_call = calls[-1][1]["config"]
+    assert split_call == api.SplitConfig(
+        dataset=str(run_dir / "artifacts" / "datasets" / "europarl_de-en_train"),
+        split_ratio={"train": 0.9, "val": 0.1},
+        seed=13,
+    )
+    config_text = (
+        run_dir / "artifacts" / "datasets" / "europarl_de-en_train" / "preprocess_config.yaml"
+    ).read_text(encoding="utf-8")
+    assert "split_cfg:" in config_text
+    assert "seed: 13" in config_text

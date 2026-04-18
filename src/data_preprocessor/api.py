@@ -22,7 +22,8 @@ from data_preprocessor.filter import FlawReport, filter_examples, keep, pair_pre
 from data_preprocessor.load import download_examples
 from data_preprocessor.map import map_examples
 from data_preprocessor.norm import NormReport, changes as norm_changes, norm_examples
-from data_preprocessor.shared import DownloadConfig, FilterConfig, MapConfig, NormConfig, TokenizeConfig
+from data_preprocessor.shared import DownloadConfig, FilterConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
+from data_preprocessor.split import split_dataset
 from data_preprocessor.tokenizer import (
     TokenizeReport,
     create_hf_tokenizer,
@@ -249,6 +250,11 @@ def map(config: MapConfig, input_path: str | Path, output_path: str | Path) -> N
 
 
 @_log_calls
+def split(config: SplitConfig) -> None:
+    split_dataset(config)
+
+
+@_log_calls
 def preprocess(
     download_cfg: DownloadConfig,
     tokenize_cfg: TokenizeConfig,
@@ -256,6 +262,7 @@ def preprocess(
     *,
     norm_cfg: NormConfig | None = None,
     filter_cfg: FilterConfig | None = None,
+    split_cfg: SplitConfig | None = None,
     artifacts_dir: str | Path | None = None,
     staging_dir: str | Path | None = None,
     write_jsonl: bool = True,
@@ -308,6 +315,9 @@ def preprocess(
         tgt_bos_id=training_token_ids["tgt_bos_id"] if map_cfg.tgt_bos_id is None else map_cfg.tgt_bos_id,
         tgt_eos_id=training_token_ids["tgt_eos_id"] if map_cfg.tgt_eos_id is None else map_cfg.tgt_eos_id,
     )
+    resolved_split_cfg = (
+        replace(split_cfg, dataset=str(paths["preprocessed_output"])) if split_cfg is not None else None
+    )
 
     # write preprocess_config.yaml
     write_run_config(
@@ -322,6 +332,7 @@ def preprocess(
             "filter_cfg": asdict(filter_cfg),
             "tokenize_cfg": asdict(resolved_tokenize_cfg),
             "map_cfg": asdict(resolved_map_cfg),
+            "split_cfg": None if resolved_split_cfg is None else asdict(resolved_split_cfg),
         },
         repo_root=_repo_root(),
         git_key_prefix="data_preprocessor",
@@ -346,4 +357,6 @@ def preprocess(
         yaml.safe_dump(dataset_manifest, f, sort_keys=False, allow_unicode=True)
 
     save(mapped, paths["preprocessed_output"])
+    if resolved_split_cfg is not None:
+        split(resolved_split_cfg)
 

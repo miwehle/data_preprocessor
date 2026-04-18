@@ -48,3 +48,10 @@ class MapConfig:
     tgt_bos_id: int | None = None
     tgt_eos_id: int | None = None
     include_text: bool = False
+
+
+@dataclass(frozen=True, kw_only=True)
+class SplitConfig:
+    dataset: str | None = None
+    split_ratio: dict[str, float]
+    seed: int
