@@ -1,5 +1,13 @@
 from .api import filter, load, map, norm, preprocess, split, tokenize
-from .shared import FilterConfig, LoadConfig, MapConfig, NormConfig, SplitConfig, TokenizeConfig
+from .shared import (
+    FilterConfig,
+    LoadConfig,
+    MapConfig,
+    NormConfig,
+    PreprocessRunConfig,
+    SplitConfig,
+    TokenizeConfig,
+)
 
 __all__ = [
     "LoadConfig",
@@ -7,6 +15,7 @@ __all__ = [
     "FilterConfig",
     "TokenizeConfig",
     "MapConfig",
+    "PreprocessRunConfig",
     "SplitConfig",
     "preprocess",
     "load",

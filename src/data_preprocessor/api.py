@@ -24,6 +24,7 @@ from data_preprocessor.shared import (
     LoadConfig,
     MapConfig,
     NormConfig,
+    PreprocessRunConfig,
     SplitConfig,
     TokenizeConfig,
 )
@@ -193,14 +194,11 @@ def filter(ds: Iterable[Example], config: FilterConfig, report: Any | None = Non
 
 @_log_calls
 def tokenize(
-    ds: Iterable[Example],
-    config: TokenizeConfig,
-    tokenizer: Any | None = None,
-    report: Any | None = None,
+    ds: Iterable[Example], config: TokenizeConfig, tokenizer: Any | None = None, report: Any | None = None
 ) -> Iterator[Example]:
-    if config.max_seq_len is not None and config.max_seq_len < 0:
-        raise ValueError("max_seq_len must be >= 0 or None.")
-    yield from tokenize_examples(ds, config, tokenizer or create_hf_tokenizer(config.tokenizer_model_name), report)
+    yield from tokenize_examples(
+        ds, config, tokenizer or create_hf_tokenizer(config.tokenizer_model_name), report
+    )
 
 
 @_log_calls
@@ -215,16 +213,7 @@ def split(config: SplitConfig) -> None:
 
 @_log_calls
 def preprocess(
-    load_config: LoadConfig,
-    tokenize_config: TokenizeConfig,
-    map_config: MapConfig,
-    *,
-    norm_config: NormConfig | None = None,
-    filter_config: FilterConfig | None = None,
-    split_config: SplitConfig | None = None,
-    artifacts_dir: str | Path | None = None,
-    staging_dir: str | Path | None = None,
-    write_snapshots: bool = False,
+    config: PreprocessRunConfig,
 ) -> None:
     """Run the full preprocessing pipeline and produce translation-training output.
 
@@ -250,12 +239,14 @@ def preprocess(
             return snapshot(stage(ds, config, *args, report), config)
 
     # initialize configs and output paths
-    norm_config = norm_config or NormConfig()
-    filter_config = filter_config or FilterConfig()
-    dataset_name = load_config.dataset_name or _dataset_name_for_filesystem(load_config.path_name)
-    dataset_dir_name = _dataset_dir_name(load_config, dataset_name)
-    final_root = _datasets_root(artifacts_dir)
-    resolved_staging_root = _staging_root(artifacts_dir, staging_dir) if write_snapshots else None
+    norm_config = config.norm_config or NormConfig()
+    filter_config = config.filter_config or FilterConfig()
+    dataset_name = config.load_config.dataset_name or _dataset_name_for_filesystem(config.load_config.path_name)
+    dataset_dir_name = _dataset_dir_name(config.load_config, dataset_name)
+    final_root = _datasets_root(config.artifacts_dir)
+    resolved_staging_root = (
+        _staging_root(config.artifacts_dir, config.staging_dir) if config.write_snapshots else None
+    )
     run_name = _next_available_run_name(dataset_dir_name, final_root, resolved_staging_root)
     preprocessed_output, resolved_staging_dir = _run_dirs(run_name, final_root, resolved_staging_root)
     preprocessed_output.mkdir(parents=True, exist_ok=True)
@@ -263,20 +254,26 @@ def preprocess(
         resolved_staging_dir.mkdir(parents=True, exist_ok=True)
     get_logger("data_preprocessor", log_path=preprocessed_output / "preprocess.log")
 
-    tokenizer = create_hf_tokenizer(tokenize_config.tokenizer_model_name)
+    tokenizer = create_hf_tokenizer(config.tokenize_config.tokenizer_model_name)
     training_token_ids = resolve_training_token_ids(tokenizer)
-    _validate_preprocess_configs(load_config, tokenize_config, map_config, training_token_ids)
+    _validate_preprocess_configs(config.load_config, config.tokenize_config, config.map_config, training_token_ids)
 
     # fill missing config fields
-    resolved_tokenize_config = replace(tokenize_config, src_lang=tokenize_config.src_lang or map_config.src_lang)
+    resolved_tokenize_config = replace(
+        config.tokenize_config, src_lang=config.tokenize_config.src_lang or config.map_config.src_lang
+    )
     resolved_map_config = replace(
-        map_config,
-        id_key=map_config.id_key or load_config.id_field,
-        tgt_bos_id=training_token_ids["tgt_bos_id"] if map_config.tgt_bos_id is None else map_config.tgt_bos_id,
-        tgt_eos_id=training_token_ids["tgt_eos_id"] if map_config.tgt_eos_id is None else map_config.tgt_eos_id,
+        config.map_config,
+        id_key=config.map_config.id_key or config.load_config.id_field,
+        tgt_bos_id=training_token_ids["tgt_bos_id"]
+        if config.map_config.tgt_bos_id is None
+        else config.map_config.tgt_bos_id,
+        tgt_eos_id=training_token_ids["tgt_eos_id"]
+        if config.map_config.tgt_eos_id is None
+        else config.map_config.tgt_eos_id,
     )
     resolved_split_config = (
-        replace(split_config, dataset=str(preprocessed_output)) if split_config is not None else None
+        replace(config.split_config, dataset=str(preprocessed_output)) if config.split_config is not None else None
     )
 
     # write preprocess_config.yaml
@@ -284,10 +281,10 @@ def preprocess(
         preprocessed_output / "preprocess_config.yaml",
         {
             "dataset_schema_version": "1",
-            "write_snapshots": write_snapshots,
-            "artifacts_dir": None if artifacts_dir is None else str(artifacts_dir),
-            "staging_dir": None if staging_dir is None else str(staging_dir),
-            "load_config": asdict(load_config),
+            "write_snapshots": config.write_snapshots,
+            "artifacts_dir": None if config.artifacts_dir is None else str(config.artifacts_dir),
+            "staging_dir": None if config.staging_dir is None else str(config.staging_dir),
+            "load_config": asdict(config.load_config),
             "norm_config": asdict(norm_config),
             "filter_config": asdict(filter_config),
             "tokenize_config": asdict(resolved_tokenize_config),
@@ -299,7 +296,7 @@ def preprocess(
     )
 
     # core
-    ds = snapshot(load(load_config), load_config)
+    ds = snapshot(load(config.load_config), config.load_config)
     ds = run_stage(norm, ds, norm_config)
     ds = run_stage(filter, ds, filter_config)
     ds = run_stage(tokenize, ds, resolved_tokenize_config, tokenizer)

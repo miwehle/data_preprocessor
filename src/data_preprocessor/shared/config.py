@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
+from pydantic import ConfigDict
+from pydantic.dataclasses import dataclass
 
-@dataclass(frozen=True, kw_only=True)
+_CONFIG = ConfigDict(extra="forbid")
+
+
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class LoadConfig:
     path_name: str
     name: str | None = None
@@ -18,19 +23,19 @@ class LoadConfig:
     overwrite_ids: bool = False
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class NormConfig:
     changes: list[Any] | None = None
     norm_debug: bool = False
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class FilterConfig:
     predicates: list[Any] | None = None
     pair_predicates: list[Any] | None = None
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class TokenizeConfig:
     tokenizer_model_name: str
     tokenizer_kwargs: dict | None = None
@@ -39,7 +44,7 @@ class TokenizeConfig:
     src_lang: str | None = None
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class MapConfig:
     src_lang: str
     tgt_lang: str
@@ -50,8 +55,21 @@ class MapConfig:
     include_text: bool = False
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
 class SplitConfig:
     dataset: str | None = None
     split_ratio: dict[str, float]
     seed: int
+
+
+@dataclass(frozen=True, kw_only=True, config=_CONFIG)
+class PreprocessRunConfig:
+    load_config: LoadConfig
+    tokenize_config: TokenizeConfig
+    map_config: MapConfig
+    norm_config: NormConfig | None = None
+    filter_config: FilterConfig | None = None
+    split_config: SplitConfig | None = None
+    artifacts_dir: str | Path | None = None
+    staging_dir: str | Path | None = None
+    write_snapshots: bool = False
