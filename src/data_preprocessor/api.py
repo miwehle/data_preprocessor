@@ -81,15 +81,15 @@ def _stage_name(config: object) -> str:
     return type(config).__name__.removesuffix("Config").lower()
 
 
-def _report_context(config: object, staging_dir: Path | None):
+def _report_context(stage: Callable[..., Iterable[Example]], config: object, staging_dir: Path | None):
     if staging_dir is None:
         return nullcontext(None)
     report_path = staging_dir / f"{_stage_name(config)}_report.txt"
-    if isinstance(config, NormConfig):
+    if stage is norm:
         return closing(NormReport.from_path(report_path, debug=config.norm_debug))
-    if isinstance(config, FilterConfig):
+    if stage is filter:
         return closing(FlawReport.from_path(report_path))
-    if isinstance(config, TokenizeConfig):
+    if stage is tokenize:
         return closing(TokenizeReport.from_path(report_path, debug=config.tokenize_debug))
     return nullcontext(None)
 
@@ -236,7 +236,7 @@ def preprocess(
     def run_stage(
         stage: Callable[..., Iterable[Example]], ds: Iterable[Example], config: object, *args: Any
     ) -> Iterable[Example]:
-        with _report_context(config, resolved_staging_dir) as report:
+        with _report_context(stage, config, resolved_staging_dir) as report:
             return snapshot(stage(ds, config, *args, report), config)
 
     # initialize configs and output paths
