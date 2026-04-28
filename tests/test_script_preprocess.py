@@ -18,7 +18,7 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
             {
                 "artifacts_dir": "/content/drive/MyDrive/nmt_lab/artifacts",
                 "staging_dir": "/content/data_preprocessor_staging",
-                "write_jsonl": False,
+                "write_snapshots": True,
                 "load_config": {"path_name": "Helsinki-NLP/europarl", "name": "de-en", "split": "train"},
                 "tokenize_config": {"tokenizer_model_name": "Helsinki-NLP/opus-mt-de-en"},
                 "map_config": {"src_lang": "de", "tgt_lang": "en", "include_text": True},
@@ -57,6 +57,6 @@ def test_script_preprocess_loads_yaml_and_calls_api(monkeypatch):
             "split_config": api.SplitConfig(split_ratio={"train": 0.9, "val": 0.1}, seed=17),
             "artifacts_dir": "/content/drive/MyDrive/nmt_lab/artifacts",
             "staging_dir": "/content/data_preprocessor_staging",
-            "write_jsonl": False,
+            "write_snapshots": True,
         }
     ]

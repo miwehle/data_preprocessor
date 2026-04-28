@@ -50,7 +50,7 @@ def main() -> int:
             split_config=SplitConfig(**cfg["split_config"]) if cfg.get("split_config") is not None else None,
             artifacts_dir=cfg.get("artifacts_dir"),
             staging_dir=cfg.get("staging_dir"),
-            write_jsonl=cfg.get("write_jsonl", True),
+            write_snapshots=cfg.get("write_snapshots", False),
         )
     except Exception as exc:
         print(f"Preprocess failed: {exc}")

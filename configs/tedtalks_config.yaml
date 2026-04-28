@@ -1,4 +1,4 @@
-write_jsonl: true
+write_snapshots: true
 
 load_config:
   path_name: parquet

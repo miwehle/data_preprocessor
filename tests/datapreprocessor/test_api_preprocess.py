@@ -26,8 +26,8 @@ def _patch_common_io(monkeypatch, *, capture_save: bool, calls: list[tuple[str, 
 
 
 def _patch_stage_spies(monkeypatch, calls: list[tuple[str, dict]]) -> None:
-    def _record(name: str):
-        return lambda *args: calls.append((name, {"args": args}))
+    def _record(name: str, result=None):
+        return lambda *args: calls.append((name, {"args": args})) or ([] if result is None else result)
 
     monkeypatch.setattr(api, "load", _record("load"))
     monkeypatch.setattr(api, "norm", _record("norm"))
@@ -70,57 +70,45 @@ def test_preprocess_calls_stages_in_order(monkeypatch):
     assert calls[0][1]["args"][0].max_examples == 123
     assert calls[0][1]["args"][0].include_ids is True
     norm_call = next(kwargs for name, kwargs in calls if name == "norm")
-    assert norm_call["args"][0].changes == ["strip_edges", "collapse_whitespace"]
+    assert norm_call["args"][1].changes == ["strip_edges", "collapse_whitespace"]
     tokenize_call = next(kwargs for name, kwargs in calls if name == "tokenize")
-    assert tokenize_call["args"][0].max_seq_len == 256
-    assert tokenize_call["args"][0].src_lang == "de"
-    assert calls[-2][1]["args"][0].include_text is True
-    assert calls[0][1]["args"][1] == (
-        run_dir / "artifacts" / "datasets" / "europarl_de-en_train_123_staging" / "europarl_raw.jsonl"
-    )
+    assert tokenize_call["args"][1].max_seq_len == 256
+    assert tokenize_call["args"][1].src_lang == "de"
+    map_call = next(kwargs for name, kwargs in calls if name == "map")
+    assert map_call["args"][1].include_text is True
+    assert calls[-1][1]["output_path"] == run_dir / "artifacts" / "datasets" / "europarl_de-en_train_123"
 
 
-def test_preprocess_derives_filesystem_dataset_name(monkeypatch):
-    seen_raw_output_paths: list[Path] = []
-    seen_map_output_paths: list[Path] = []
+def test_preprocess_writes_snapshots_from_stage_names(monkeypatch):
+    calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
-
-    def fake_load(config, output_path):
-        seen_raw_output_paths.append(Path(output_path))
-
-    def fake_map(config, input_path, output_path):
-        seen_map_output_paths.append(Path(output_path))
-
-    _patch_common_io(monkeypatch, capture_save=False, calls=[])
+    _patch_common_io(monkeypatch, capture_save=True, calls=calls)
+    _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
-    monkeypatch.setattr(api, "load", fake_load)
-    monkeypatch.setattr(api, "norm", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "filter", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "tokenize", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "map", fake_map)
 
     api.preprocess(
         load_config=api.LoadConfig(path_name="Org/My-Data Set+V1", name="de-en", split="train"),
         tokenize_config=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_config=api.MapConfig(src_lang="de", tgt_lang="en"),
+        write_snapshots=True,
     )
 
-    assert seen_raw_output_paths
-    assert seen_map_output_paths
-    assert seen_raw_output_paths[0].name == "My-Data_Set_V1_raw.jsonl"
-    assert seen_map_output_paths[0].name == "My-Data_Set_V1_mapped.jsonl"
-    assert seen_raw_output_paths[0].parent.name == "My-Data_Set_V1_de-en_train_staging"
-    assert seen_raw_output_paths[0].parent.parent.name == "datasets"
-    assert seen_map_output_paths[0].parent.name == "My-Data_Set_V1_de-en_train_staging"
+    save_paths = [kwargs["output_path"] for name, kwargs in calls if name == "save"]
+    assert save_paths[0].name == "My-Data_Set_V1_load.jsonl"
+    assert save_paths[1].name == "My-Data_Set_V1_norm.jsonl"
+    assert save_paths[2].name == "My-Data_Set_V1_filter.jsonl"
+    assert save_paths[3].name == "My-Data_Set_V1_tokenize.jsonl"
+    assert save_paths[4].name == "My-Data_Set_V1_map.jsonl"
+    assert save_paths[0].parent.name == "My-Data_Set_V1_de-en_train_staging"
+    assert save_paths[5] == run_dir / "artifacts" / "datasets" / "My-Data_Set_V1_de-en_train"
 
 
 def test_preprocess_passes_training_token_ids_to_map(monkeypatch):
     calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
-
     _patch_common_io(monkeypatch, capture_save=False, calls=calls)
     _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
@@ -133,15 +121,12 @@ def test_preprocess_passes_training_token_ids_to_map(monkeypatch):
     )
 
     map_call = next(kwargs for name, kwargs in calls if name == "map")
-    assert map_call["args"][0].tgt_bos_id == 58101
-    assert map_call["args"][0].tgt_eos_id == 0
+    assert map_call["args"][1].tgt_bos_id == 58101
+    assert map_call["args"][1].tgt_eos_id == 0
 
 
 def test_filter_uses_configured_predicates(monkeypatch):
     seen = {}
-
-    monkeypatch.setattr(api.io, "load", lambda path: [{"translation": {"de": "x", "en": "y"}}])
-    monkeypatch.setattr(api.io, "save", lambda examples, output_path: list(examples))
 
     def fake_filter_examples(ds, keep_fn):
         seen["text_flaws"] = keep_fn.keywords["text_flaws"]
@@ -150,13 +135,14 @@ def test_filter_uses_configured_predicates(monkeypatch):
 
     monkeypatch.setattr(api, "filter_examples", fake_filter_examples)
 
-    api.filter(
-        api.FilterConfig(
-            predicates=["is_blank", ["is_too_short", {"min": 5}]], pair_predicates=["are_equal"]
-        ),
-        "in.jsonl",
-        "out.jsonl",
-        None,
+    list(
+        api.filter(
+            [{"translation": {"de": "x", "en": "y"}}],
+            api.FilterConfig(
+                predicates=["is_blank", ["is_too_short", {"min": 5}]], pair_predicates=["are_equal"]
+            ),
+            None,
+        )
     )
 
     assert [f.__name__ for f in seen["text_flaws"][:1]] == ["is_blank"]
@@ -169,9 +155,12 @@ def test_preprocess_writes_dataset_manifest(monkeypatch):
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
 
-    monkeypatch.setattr(api.io, "load", lambda path: [{"id": 1}, {"id": 2}, {"id": 3}])
     monkeypatch.setattr(api.io, "save", lambda examples, output_path: None)
-    _patch_stage_spies(monkeypatch, [])
+    monkeypatch.setattr(api, "load", lambda config: [])
+    monkeypatch.setattr(api, "norm", lambda ds, config, report_path=None: ds)
+    monkeypatch.setattr(api, "filter", lambda ds, config, report_path=None: ds)
+    monkeypatch.setattr(api, "tokenize", lambda ds, config, tokenizer=None, report_path=None: ds)
+    monkeypatch.setattr(api, "map", lambda ds, config, report=None: [{"id": 1}, {"id": 2}, {"id": 3}])
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
 
@@ -223,10 +212,7 @@ def test_preprocess_uses_incremented_dataset_dir(monkeypatch):
     )
 
     assert (run_dir / "artifacts" / "datasets" / "europarl_de-en_train (1)").is_dir()
-    assert calls[0][1]["args"][1] == (
-        run_dir / "artifacts" / "datasets" / "europarl_de-en_train (1)_staging" / "europarl_raw.jsonl"
-    )
-    assert calls[-1][1]["output_path"] == (run_dir / "artifacts" / "datasets" / "europarl_de-en_train (1)")
+    assert calls[-1][1]["output_path"] == run_dir / "artifacts" / "datasets" / "europarl_de-en_train (1)"
 
 
 def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
@@ -234,7 +220,6 @@ def test_preprocess_logs_to_dataset_preprocess_log(monkeypatch):
     monkeypatch.chdir(run_dir)
 
     monkeypatch.setattr(api, "load_examples", lambda config: [])
-    monkeypatch.setattr(api.io, "load", lambda path: [])
     monkeypatch.setattr(api.io, "save", lambda examples, output_path: None)
     monkeypatch.setattr(api, "norm_examples", lambda ds, config=None, norm_reporter=None: ds)
     monkeypatch.setattr(api, "filter_examples", lambda ds, keep_fn: ds)
@@ -272,32 +257,22 @@ def test_preprocess_uses_separate_staging_dir(monkeypatch):
         tokenize_config=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_config=api.MapConfig(src_lang="de", tgt_lang="en"),
         staging_dir=staging_root,
+        write_snapshots=True,
     )
 
-    assert calls[0][1]["args"][1] == staging_root / "europarl_de-en_train_staging" / "europarl_raw.jsonl"
-    assert calls[-1][1]["output_path"] == run_dir / "artifacts" / "datasets" / "europarl_de-en_train"
+    save_paths = [kwargs["output_path"] for name, kwargs in calls if name == "save"]
+    assert save_paths[0] == staging_root / "europarl_de-en_train_staging" / "europarl_load.jsonl"
+    assert save_paths[-1] == run_dir / "artifacts" / "datasets" / "europarl_de-en_train"
 
 
 def test_preprocess_uses_dataset_name_for_generic_downloads(monkeypatch):
-    seen_raw_output_paths: list[Path] = []
-    seen_map_output_paths: list[Path] = []
+    calls: list[tuple[str, dict]] = []
     run_dir = _run_dir()
     monkeypatch.chdir(run_dir)
-
-    def fake_load(config, output_path):
-        seen_raw_output_paths.append(Path(output_path))
-
-    def fake_map(config, input_path, output_path):
-        seen_map_output_paths.append(Path(output_path))
-
-    _patch_common_io(monkeypatch, capture_save=False, calls=[])
+    _patch_common_io(monkeypatch, capture_save=True, calls=calls)
+    _patch_stage_spies(monkeypatch, calls)
     _patch_training_token_ids(monkeypatch)
     monkeypatch.setattr(api, "_artifacts_root", lambda: run_dir / "artifacts")
-    monkeypatch.setattr(api, "load", fake_load)
-    monkeypatch.setattr(api, "norm", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "filter", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "tokenize", lambda config, input_path, output_path, report_path=None: None)
-    monkeypatch.setattr(api, "map", fake_map)
 
     api.preprocess(
         load_config=api.LoadConfig(
@@ -308,12 +283,14 @@ def test_preprocess_uses_dataset_name_for_generic_downloads(monkeypatch):
         ),
         tokenize_config=api.TokenizeConfig(tokenizer_model_name="Helsinki-NLP/opus-mt-de-en"),
         map_config=api.MapConfig(src_lang="de", tgt_lang="en"),
+        write_snapshots=True,
     )
 
-    assert seen_raw_output_paths[0].name == "iwslt2017-de-en_raw.jsonl"
-    assert seen_map_output_paths[0].name == "iwslt2017-de-en_mapped.jsonl"
-    assert seen_raw_output_paths[0].parent.name == "iwslt2017-de-en_train_staging"
-    assert seen_map_output_paths[0].parent.name == "iwslt2017-de-en_train_staging"
+    save_paths = [kwargs["output_path"] for name, kwargs in calls if name == "save"]
+    assert save_paths[0].name == "iwslt2017-de-en_load.jsonl"
+    assert save_paths[4].name == "iwslt2017-de-en_map.jsonl"
+    assert save_paths[0].parent.name == "iwslt2017-de-en_train_staging"
+    assert save_paths[4].parent.name == "iwslt2017-de-en_train_staging"
 
 
 def test_preprocess_requires_dataset_name_for_generic_downloads(monkeypatch):
