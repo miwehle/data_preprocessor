@@ -23,21 +23,11 @@ for path in (SRC_DIR, SHARED_SRC_DIR):
 
 
 def main() -> int:
-    from lab_infrastructure.run_config import read_run_config_as
+    from lab_infrastructure import run_config_cli
 
     from data_preprocessor import PreprocessRunConfig, preprocess
 
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/preprocess.py <config-path>")
-        return 1
-
-    try:
-        cfg = read_run_config_as(Path(sys.argv[1]), PreprocessRunConfig)
-        preprocess(cfg)
-    except Exception as exc:
-        print(f"Preprocess failed: {exc}")
-        return 1
-
+    run_config_cli(preprocess, PreprocessRunConfig)
     return 0
 
 
